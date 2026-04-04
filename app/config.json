@@ -1,0 +1,47 @@
+{
+  "event": {
+    "name": "Sarah & James",
+    "date": "October 18, 2026",
+    "location": "The Grand Ballroom, New York"
+  },
+  "primaryEvent": {
+    "name": "Wedding Reception",
+    "acceptLabel": "Joyfully accepts",
+    "declineLabel": "Regretfully declines"
+  },
+  "secondaryEvent": {
+    "enabled": true,
+    "name": "Rehearsal Dinner",
+    "tag": "rehearsal-dinner",
+    "question": "Will you be joining us for the Rehearsal Dinner?"
+  },
+  "form": {
+    "lookupTitle": "RSVP",
+    "lookupSubtitle": "Enter your name as it appears on your invitation",
+    "lookupButton": "Find my invitation",
+    "notFoundMessage": "We couldn't find your name on the guest list. Please check your spelling and try again.",
+    "dietaryLabel": "Dietary restrictions or allergies",
+    "dietaryPlaceholder": "None, vegetarian, gluten-free...",
+    "songLabel": "Song request",
+    "songPlaceholder": "A song that will get you on the dance floor",
+    "noteLabel": "Note to the couple",
+    "notePlaceholder": "Share a message, memory, or well wishes...",
+    "declineNoteLabel": "Leave a note for the couple",
+    "declineNotePlaceholder": "Share a message or well wishes...",
+    "submitButton": "Submit RSVP"
+  },
+  "secondaryForm": {
+    "mealLabel": "Meal preference",
+    "mealPlaceholder": "Chicken, fish, vegetarian...",
+    "shuttleLabel": "I would like to use the shuttle service"
+  },
+  "confirmation": {
+    "title": "You're all set",
+    "message": "Thank you for your RSVP. We look forward to celebrating with you."
+  },
+  "theme": {
+    "primaryColor": "#111111",
+    "backgroundColor": "#ffffff",
+    "fontFamily": "Inter"
+  }
+}
