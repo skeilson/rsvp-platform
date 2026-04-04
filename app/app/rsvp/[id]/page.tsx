@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { config } from '@/lib/config'
 
 type Guest = {
   id: string
@@ -26,9 +27,8 @@ export default function RSVPFormPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
-  const isSecondaryEligible = guest?.tags?.some(
-    t => t.tags.name === 'rehearsal-dinner'
-  )
+  const isSecondaryEligible = config.secondaryEvent.enabled &&
+    guest?.tags?.some(t => t.tags.name === config.secondaryEvent.tag)
 
   useEffect(() => {
     async function fetchGuest() {
@@ -61,7 +61,6 @@ export default function RSVPFormPage() {
     if (!guest) return
     setSubmitting(true)
 
-    // Write primary response
     await supabase.from('responses').insert({
       guest_id: guest.id,
       attending,
@@ -70,7 +69,6 @@ export default function RSVPFormPage() {
       note: note || null,
     })
 
-    // Write secondary event response if applicable
     if (isSecondaryEligible && attendingSecondary !== null) {
       const { data: event } = await supabase
         .from('events')
@@ -89,7 +87,6 @@ export default function RSVPFormPage() {
       }
     }
 
-    // Mark guest as responded
     await supabase
       .from('guests')
       .update({ has_responded: true })
@@ -113,19 +110,19 @@ export default function RSVPFormPage() {
 
         {/* Primary attendance */}
         <div className="space-y-3">
-          <p className="font-medium">Will you be attending?</p>
+          <p className="font-medium">Will you be attending {config.primaryEvent.name}?</p>
           <div className="flex gap-4">
             <button
               onClick={() => setAttending(true)}
               className={`flex-1 py-3 rounded-lg border font-medium ${attending === true ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300'}`}
             >
-              Joyfully accepts
+              {config.primaryEvent.acceptLabel}
             </button>
             <button
               onClick={() => setAttending(false)}
               className={`flex-1 py-3 rounded-lg border font-medium ${attending === false ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300'}`}
             >
-              Regretfully declines
+              {config.primaryEvent.declineLabel}
             </button>
           </div>
         </div>
@@ -134,10 +131,10 @@ export default function RSVPFormPage() {
         {attending === true && (
           <div className="space-y-6">
             <div className="space-y-2">
-              <p className="font-medium">Dietary restrictions or allergies</p>
+              <p className="font-medium">{config.form.dietaryLabel}</p>
               <input
                 type="text"
-                placeholder="None, vegetarian, gluten-free..."
+                placeholder={config.form.dietaryPlaceholder}
                 value={dietary}
                 onChange={e => setDietary(e.target.value)}
                 className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
@@ -145,10 +142,10 @@ export default function RSVPFormPage() {
             </div>
 
             <div className="space-y-2">
-              <p className="font-medium">Song request</p>
+              <p className="font-medium">{config.form.songLabel}</p>
               <input
                 type="text"
-                placeholder="A song that will get you on the dance floor"
+                placeholder={config.form.songPlaceholder}
                 value={songRequest}
                 onChange={e => setSongRequest(e.target.value)}
                 className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
@@ -156,9 +153,9 @@ export default function RSVPFormPage() {
             </div>
 
             <div className="space-y-2">
-              <p className="font-medium">Note to the couple</p>
+              <p className="font-medium">{config.form.noteLabel}</p>
               <textarea
-                placeholder="Share a message, memory, or well wishes..."
+                placeholder={config.form.notePlaceholder}
                 value={note}
                 onChange={e => setNote(e.target.value)}
                 rows={4}
@@ -166,10 +163,10 @@ export default function RSVPFormPage() {
               />
             </div>
 
-            {/* Secondary event — only shown to eligible guests */}
+            {/* Secondary event */}
             {isSecondaryEligible && (
               <div className="space-y-3 border-t pt-6">
-                <p className="font-medium">Will you be joining us for the Rehearsal Dinner?</p>
+                <p className="font-medium">{config.secondaryEvent.question}</p>
                 <div className="flex gap-4">
                   <button
                     onClick={() => setAttendingSecondary(true)}
@@ -185,14 +182,13 @@ export default function RSVPFormPage() {
                   </button>
                 </div>
 
-                {/* Secondary event YES path */}
                 {attendingSecondary === true && (
                   <div className="space-y-4 pt-2">
                     <div className="space-y-2">
-                      <p className="font-medium">Meal preference</p>
+                      <p className="font-medium">{config.secondaryForm.mealLabel}</p>
                       <input
                         type="text"
-                        placeholder="Chicken, fish, vegetarian..."
+                        placeholder={config.secondaryForm.mealPlaceholder}
                         value={meal}
                         onChange={e => setMeal(e.target.value)}
                         className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
@@ -208,7 +204,7 @@ export default function RSVPFormPage() {
                         className="w-4 h-4"
                       />
                       <label htmlFor="shuttle" className="text-base">
-                        I would like to use the shuttle service
+                        {config.secondaryForm.shuttleLabel}
                       </label>
                     </div>
                   </div>
@@ -221,9 +217,9 @@ export default function RSVPFormPage() {
         {/* Attending NO path */}
         {attending === false && (
           <div className="space-y-2">
-            <p className="font-medium">Leave a note for the couple</p>
+            <p className="font-medium">{config.form.declineNoteLabel}</p>
             <textarea
-              placeholder="Share a message or well wishes..."
+              placeholder={config.form.declineNotePlaceholder}
               value={note}
               onChange={e => setNote(e.target.value)}
               rows={4}
@@ -232,14 +228,13 @@ export default function RSVPFormPage() {
           </div>
         )}
 
-        {/* Submit button */}
         {attending !== null && (
           <button
             onClick={handleSubmit}
             disabled={submitting || (isSecondaryEligible && attending && attendingSecondary === null)}
             className="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
           >
-            {submitting ? 'Submitting...' : 'Submit RSVP'}
+            {submitting ? 'Submitting...' : config.form.submitButton}
           </button>
         )}
       </div>

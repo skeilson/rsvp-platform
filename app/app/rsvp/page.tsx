@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { config } from '@/lib/config'
 
 export default function RSVPLookupPage() {
   const router = useRouter()
@@ -25,7 +26,7 @@ export default function RSVPLookupPage() {
     setLoading(false)
 
     if (error || !data) {
-      setError("We couldn't find your name on the guest list. Please check your spelling and try again.")
+      setError(config.form.notFoundMessage)
       return
     }
 
@@ -35,8 +36,12 @@ export default function RSVPLookupPage() {
   return (
     <main className="min-h-screen flex items-center justify-center p-8">
       <div className="w-full max-w-md space-y-6">
-        <h1 className="text-3xl font-medium text-center">RSVP</h1>
-        <p className="text-center text-gray-500">Enter your name as it appears on your invitation</p>
+        <h1 className="text-3xl font-medium text-center">
+          {config.form.lookupTitle}
+        </h1>
+        <p className="text-center text-gray-500">
+          {config.form.lookupSubtitle}
+        </p>
 
         <div className="space-y-4">
           <input
@@ -63,7 +68,7 @@ export default function RSVPLookupPage() {
             disabled={loading || !firstName || !lastName}
             className="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
           >
-            {loading ? 'Looking up...' : 'Find my invitation'}
+            {loading ? 'Looking up...' : config.form.lookupButton}
           </button>
         </div>
       </div>
