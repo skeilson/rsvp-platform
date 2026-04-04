@@ -9,7 +9,7 @@ type Guest = {
   id: string
   first_name: string
   last_name: string
-  tags: { tags: { name: string } }[]
+  guest_tags: { tags: { name: string } }[]
 }
 
 export default function RSVPFormPage() {
@@ -28,7 +28,7 @@ export default function RSVPFormPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const isSecondaryEligible = config.secondaryEvent.enabled &&
-    guest?.tags?.some(t => t.tags.name === config.secondaryEvent.tag)
+    guest?.guest_tags?.some(t => t.tags.name === config.secondaryEvent.tag)
 
   useEffect(() => {
     async function fetchGuest() {
