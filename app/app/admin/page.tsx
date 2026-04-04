@@ -98,11 +98,10 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-medium">Admin dashboard</h1>
           
-            href="/api/admin/logout"
-            className="text-sm text-gray-400 underline underline-offset-4"
-          >
+            <a href="/api/admin/logout">
+            <p className="text-sm text-gray-400 underline underline-offset-4">
             Sign out
-          </a>
+            </a>
         </div>
 
         {/* Stats */}
