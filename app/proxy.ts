@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const adminSession = request.cookies.get('admin_session')
 
   if (!adminSession || adminSession.value !== 'authenticated') {
