@@ -27,36 +27,38 @@ export default function AdminDashboardPage() {
   const [filter, setFilter] = useState<'all' | 'responded' | 'pending'>('all')
 
   async function fetchGuests() {
-    const { data, error } = await supabase
-      .from('guests')
-      .select(`
-        id,
-        first_name,
-        last_name,
-        email,
-        has_responded,
-        responses (
-          id,
-          attending,
-          dietary,
-          song_request,
-          note
-        ),
-        guest_tags (
-          tags ( name )
-        )
-      `)
-      .order('last_name', { ascending: true })
+    try {
+	const { data, error } = await supabase
+      	  .from('guests')
+          .select(`
+      	    id,
+            first_name,
+            last_name,
+            email,
+            has_responded,
+            responses (
+              id,
+              attending,
+              dietary,
+              song_request,
+              note
+            ),
+           guest_tags (
+             tags ( name )
+           )
+         `)
+         .order('last_name', { ascending: true })
 
-    if (!error && data) {
-      setGuests(data as unknown as GuestWithResponse[])
-    }
-
-    setLoading(false)
+       if (!error && data) {
+         setGuests(data as unknown as GuestWithResponse[])
+       }
+    } finally {
+      setLoading(false)
   }
+}
 
    useEffect(() => {
-     fetchGuests()
+     void fetchGuests()
    }, [])
 
   async function handleDelete(responseId: string, guestId: string) {
