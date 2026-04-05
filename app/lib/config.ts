@@ -1,5 +1,13 @@
 import configData from '../config.json'
 
-export type AppConfig = typeof configData
+export type AccessType = 'none' | 'password' | 'token'
 
-export const config: AppConfig = configData
+export type AppConfig = typeof configData & {
+  access: {
+    type: AccessType
+    password: string
+    token: string
+  }
+}
+
+export const config: AppConfig = configData as AppConfig

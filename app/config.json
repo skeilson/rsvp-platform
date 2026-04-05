@@ -1,4 +1,9 @@
 {
+ "access": {
+   "type": "none",
+   "password": "",
+   "token": ""
+  },
   "event": {
     "name": "Sarah & James",
     "date": "October 18, 2026",

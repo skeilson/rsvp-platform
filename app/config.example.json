@@ -1,4 +1,9 @@
 {
+  "access": {
+    "type": "none",
+    "password": "",
+    "token": ""
+  },
   "event": {
     "name": "Your Names Here",
     "date": "Month Day, Year",
