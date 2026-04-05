@@ -26,10 +26,6 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'responded' | 'pending'>('all')
 
-  useEffect(() => {
-    fetchGuests()
-  }, [])
-
   async function fetchGuests() {
     const { data, error } = await supabase
       .from('guests')
@@ -58,6 +54,10 @@ export default function AdminDashboardPage() {
 
     setLoading(false)
   }
+
+   useEffect(() => {
+     fetchGuests()
+   }, [])
 
   async function handleDelete(responseId: string, guestId: string) {
     if (!confirm('Are you sure you want to delete this RSVP?')) return
