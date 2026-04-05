@@ -42,5 +42,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/((?!login).*)', '/rsvp/:path*'],
+  matcher: ['/admin/((?!login).*)', '/rsvp', '/rsvp/:path*'],
 }
