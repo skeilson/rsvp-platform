@@ -1,6 +1,4 @@
 export async function GET(request: NextRequest) {
-  console.log('SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
-  console.log('NODE_ENV:', process.env.NODE_ENV)
 
   const token = request.nextUrl.searchParams.get('token')
   const redirectTo = request.nextUrl.searchParams.get('redirect') ?? '/rsvp'
