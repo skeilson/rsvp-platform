@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
+import { guestLookupCounter } from '@/app/api/metrics/route'
 
 export default function RSVPLookupPage() {
   const router = useRouter()
@@ -29,6 +30,12 @@ export default function RSVPLookupPage() {
       setError(config.form.notFoundMessage)
       return
     }
+
+    // On success
+    guestLookupCounter.inc({ result: 'found' })
+
+    // On failure
+    guestLookupCounter.inc({ result: 'not_found' })
 
     router.push(`/rsvp/${data.id}`)
   }

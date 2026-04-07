@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
+import { rsvpSubmissionCounter } from '@/app/api/metrics/route'
 
 type Guest = {
   id: string
@@ -91,6 +92,9 @@ export default function RSVPFormPage() {
       .from('guests')
       .update({ has_responded: true })
       .eq('id', guest.id)
+
+    // Track submission metric
+    rsvpSubmissionCounter.inc({ attending: attending ? 'yes' : 'no' })
 
     router.push('/rsvp/confirmation')
   }
