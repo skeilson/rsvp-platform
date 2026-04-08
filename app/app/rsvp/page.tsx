@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
-import { guestLookupCounter } from '@/app/api/metrics/route'
 
 export default function RSVPLookupPage() {
   const router = useRouter()
@@ -32,10 +31,24 @@ export default function RSVPLookupPage() {
     }
 
     // On success
-    guestLookupCounter.inc({ result: 'found' })
-
+    await fetch('/api/metrics/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'guest_lookup',
+        labels: { result: 'found' }
+      })
+    })
+	   
     // On failure
-    guestLookupCounter.inc({ result: 'not_found' })
+    await fetch('/api/metrics/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'guest_lookup',
+        labels: { result: 'not_found' }
+      })
+    })
 
     router.push(`/rsvp/${data.id}`)
   }
