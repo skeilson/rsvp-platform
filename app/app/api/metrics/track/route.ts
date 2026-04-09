@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { rsvpSubmissionCounter, guestLookupCounter } from '../route'
+import { rsvpSubmissionCounter, guestLookupCounter, pushMetrics } from '@/lib/metrics'
 
 export async function POST(request: NextRequest) {
   const { event, labels } = await request.json()
@@ -11,6 +11,8 @@ export async function POST(request: NextRequest) {
   if (event === 'guest_lookup') {
     guestLookupCounter.inc(labels)
   }
+
+  await pushMetrics()
 
   return NextResponse.json({ success: true })
 }

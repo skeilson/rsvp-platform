@@ -1,28 +1,15 @@
 import { NextResponse } from 'next/server'
-import client from 'prom-client'
+import { rsvpSubmissionCounter, guestLookupCounter } from '@/lib/metrics'
 
-const register = new client.Registry()
-client.collectDefaultMetrics({ register })
-
-export const rsvpSubmissionCounter = new client.Counter({
-  name: 'rsvp_submissions_total',
-  help: 'Total number of RSVP submissions',
-  labelNames: ['attending'],
-  registers: [register],
-})
-
-export const guestLookupCounter = new client.Counter({
-  name: 'rsvp_guest_lookups_total',
-  help: 'Total number of guest lookups',
-  labelNames: ['result'],
-  registers: [register],
-})
+export { rsvpSubmissionCounter, guestLookupCounter }
 
 export async function GET() {
-  const metrics = await register.metrics()
+  const { register } = await import('@/lib/metrics')
+  const client = await import('prom-client')
+  const metrics = await client.default.register.metrics()
   return new NextResponse(metrics, {
     headers: {
-      'Content-Type': register.contentType,
+      'Content-Type': client.default.register.contentType,
     },
   })
 }
