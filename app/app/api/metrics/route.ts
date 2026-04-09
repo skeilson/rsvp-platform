@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { rsvpSubmissionCounter, guestLookupCounter } from '@/lib/metrics'
+import { register, esvpSubmissionCounter, guestLookupCounter } from '@/lib/metrics'
 
 export { rsvpSubmissionCounter, guestLookupCounter }
 
