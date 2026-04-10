@@ -22,10 +22,6 @@ export async function pushMetrics() {
   const grafanaUser = process.env.GRAFANA_PROMETHEUS_USER
   const grafanaToken = process.env.GRAFANA_PROMETHEUS_TOKEN
 
-  console.log('Grafana URL:', grafanaUrl)
-  console.log('Grafana User:', grafanaUser)
-  console.log('Grafana Token exists:', !!grafanaToken)
-
   if (!grafanaUrl || !grafanaUser || !grafanaToken) {
     console.log('Missing Grafana credentials — skipping push')
     return
@@ -38,7 +34,7 @@ export async function pushMetrics() {
     const response = await fetch(`${grafanaUrl}/api/prom/push`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain',
+        'Content-Type': 'text/plain; version=0.0.4',
         'Authorization': `Basic ${credentials}`,
       },
       body: metrics,
