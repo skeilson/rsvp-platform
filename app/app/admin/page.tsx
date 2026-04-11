@@ -25,41 +25,53 @@ export default function AdminDashboardPage() {
   const [guests, setGuests] = useState<GuestWithResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'responded' | 'pending'>('all')
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailMessage, setEmailMessage] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [availableTags, setAvailableTags] = useState<string[]>([])
+  const [sending, setSending] = useState(false)
+  const [sendResult, setSendResult] = useState<{ sent: number, failed: number, total: number } | null>(null)
 
   async function fetchGuests() {
     try {
-	const { data, error } = await supabase
-      	  .from('guests')
-          .select(`
-      	    id,
-            first_name,
-            last_name,
-            email,
-            has_responded,
-            responses (
-              id,
-              attending,
-              dietary,
-              song_request,
-              note
-            ),
-           guest_tags (
-             tags ( name )
-           )
-         `)
-         .order('last_name', { ascending: true })
+      const { data, error } = await supabase
+        .from('guests')
+        .select(`
+          id,
+          first_name,
+          last_name,
+          email,
+          has_responded,
+          responses (
+            id,
+            attending,
+            dietary,
+            song_request,
+            note
+          ),
+          guest_tags (
+            tags ( name )
+          )
+        `)
+        .order('last_name', { ascending: true })
 
-       if (!error && data) {
-         setGuests(data as unknown as GuestWithResponse[])
-       }
+      if (!error && data) {
+        setGuests(data as unknown as GuestWithResponse[])
+      }
     } finally {
       setLoading(false)
+    }
   }
-}
 
-   useEffect(() => {
-     void fetchGuests()
-   }, [])
+  async function fetchTags() {
+    const { data } = await supabase.from('tags').select('name')
+    if (data) setAvailableTags(data.map(t => t.name))
+  }
+
+  useEffect(() => {
+    void fetchGuests()
+    void fetchTags()
+  }, [])
 
   async function handleDelete(responseId: string, guestId: string) {
     if (!confirm('Are you sure you want to delete this RSVP?')) return
@@ -70,7 +82,27 @@ export default function AdminDashboardPage() {
       .update({ has_responded: false })
       .eq('id', guestId)
 
-    fetchGuests()
+    void fetchGuests()
+  }
+
+  async function handleEmailBlast() {
+    if (!emailSubject || !emailMessage) return
+    setSending(true)
+    setSendResult(null)
+
+    const response = await fetch('/api/admin/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject: emailSubject,
+        message: emailMessage,
+        tags: selectedTags,
+      }),
+    })
+
+    const result = await response.json()
+    setSendResult(result)
+    setSending(false)
   }
 
   const filtered = guests.filter(g => {
@@ -99,10 +131,9 @@ export default function AdminDashboardPage() {
 
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-medium">Admin dashboard</h1>
-          
-            <a href="/api/admin/logout">
+          <a href="/api/admin/logout">
             <p className="text-sm text-gray-400 underline underline-offset-4">Sign out</p>
-            </a>
+          </a>
         </div>
 
         {/* Stats */}
@@ -200,6 +231,80 @@ export default function AdminDashboardPage() {
             )
           })}
         </div>
+
+        {/* Email blast */}
+        <div className="border rounded-lg p-6 space-y-4">
+          <h2 className="text-xl font-medium">Email blast</h2>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Filter by tags</p>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedTags(prev =>
+                    prev.includes(tag)
+                      ? prev.filter(t => t !== tag)
+                      : [...prev, tag]
+                  )}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedTags.includes(tag)
+                      ? 'bg-gray-900 text-white'
+                      : 'border border-gray-300'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+              {availableTags.length === 0 && (
+                <p className="text-sm text-gray-400">No tags found</p>
+              )}
+            </div>
+            {selectedTags.length === 0 && (
+              <p className="text-xs text-gray-400">No tags selected — email will be sent to all guests with an email address</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Subject</p>
+            <input
+              type="text"
+              placeholder="Email subject"
+              value={emailSubject}
+              onChange={e => setEmailSubject(e.target.value)}
+              className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Message</p>
+            <textarea
+              placeholder="Write your message here..."
+              value={emailMessage}
+              onChange={e => setEmailMessage(e.target.value)}
+              rows={6}
+              className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+            />
+          </div>
+
+          {sendResult && (
+            <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4">
+              <p>Sent: {sendResult.sent} of {sendResult.total}</p>
+              {sendResult.failed > 0 && (
+                <p className="text-red-500">Failed: {sendResult.failed}</p>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={handleEmailBlast}
+            disabled={sending || !emailSubject || !emailMessage}
+            className="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
+          >
+            {sending ? 'Sending...' : 'Send email blast'}
+          </button>
+        </div>
+
       </div>
     </main>
   )
