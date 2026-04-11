@@ -15,3 +15,21 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+  alloy:
+    image: grafana/alloy:latest
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+    environment:
+      - APP_HOST=app:3000
+      - SCRAPE_SCHEME=http
+      - GRAFANA_PROMETHEUS_URL=${GRAFANA_PROMETHEUS_URL}
+      - GRAFANA_PROMETHEUS_USER=${GRAFANA_PROMETHEUS_USER}
+      - GRAFANA_PROMETHEUS_TOKEN=${GRAFANA_PROMETHEUS_TOKEN}
+    env_file:
+      - .env
+    command:
+      - run
+      - /etc/alloy/config.alloy
+    depends_on:
+      - app
+    restart: unless-stopped

@@ -1,0 +1,20 @@
+prometheus.scrape "rsvp" {
+  targets = [
+    {"__address__" = "env("APP_HOST")"},
+  ]
+  forward_to = [prometheus.remote_write.grafana.receiver]
+  metrics_path = "/api/metrics"
+  scrape_interval = "30s"
+  scheme = env("SCRAPE_SCHEME")
+}
+
+prometheus.remote_write "grafana" {
+  endpoint {
+    url = env("GRAFANA_PROMETHEUS_URL") + "/api/prom/push"
+
+    basic_auth {
+      username = env("GRAFANA_PROMETHEUS_USER")
+      password = env("GRAFANA_PROMETHEUS_TOKEN")
+    }
+  }
+}
