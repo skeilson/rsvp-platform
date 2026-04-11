@@ -1,6 +1,6 @@
 prometheus.scrape "rsvp" {
   targets = [
-    {"__address__" = "env("APP_HOST")"},
+    {"__address__" = env("APP_HOST")},
   ]
   forward_to = [prometheus.remote_write.grafana.receiver]
   metrics_path = "/api/metrics"
