@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
 
     const filteredGuests = tags && tags.length > 0
       ? guests.filter(g =>
-          g.guest_tags?.some((gt: { tags: { name: string } }) =>            
-              tags.includes(gt.tags.name)
+          g.guest_tags?.some((gt: { tags: { name: string }[] }) =>            
+              gt.tags.some(t => tags.includes(t.name))
           )
         )
       : guests
