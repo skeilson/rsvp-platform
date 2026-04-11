@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server'
 import { register } from '@/lib/metrics'
 
 export async function GET() {
-  const metrics = await client.register.metrics()
+  const metrics = await register.metrics()
   return new NextResponse(metrics, {
     headers: {
-      'Content-Type': client.register.contentType,
+      'Content-Type': register.contentType,
     },
   })
 }
