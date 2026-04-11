@@ -16,3 +16,5 @@ export const guestLookupCounter = new client.Counter({
   labelNames: ['result'],
   registers: [register],
 })
+
+export { register }

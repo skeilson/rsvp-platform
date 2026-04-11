@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import client from 'prom-client'
+import { register } from '@/lib/metrics'
 
 export async function GET() {
   const metrics = await client.register.metrics()
