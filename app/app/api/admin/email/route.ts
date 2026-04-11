@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
-import { supabaseAdmin } from '@/lib/supabase-admin'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
   const { subject, message, tags } = await request.json()
 
   if (!subject || !message) {
@@ -15,8 +20,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Fetch guests matching the selected tags
-    let query = supabaseAdmin
+    const { data: guests, error } = await supabaseAdmin
       .from('guests')
       .select(`
         id,
@@ -29,8 +33,6 @@ export async function POST(request: NextRequest) {
       `)
       .not('email', 'is', null)
 
-    const { data: guests, error } = await query
-
     if (error || !guests) {
       return NextResponse.json(
         { error: 'Failed to fetch guests' },
@@ -38,7 +40,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Filter by tags if provided
     const filteredGuests = tags && tags.length > 0
       ? guests.filter(g =>
           g.guest_tags?.some((gt: any) =>
@@ -47,7 +48,6 @@ export async function POST(request: NextRequest) {
         )
       : guests
 
-    // Send emails
     const results = await Promise.allSettled(
       filteredGuests.map(guest =>
         resend.emails.send({
