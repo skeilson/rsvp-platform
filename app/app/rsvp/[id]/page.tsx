@@ -55,7 +55,7 @@ export default function RSVPFormPage() {
     }
 
     fetchGuest()
-  }, [id])
+  }, [id, router])
 
   async function handleSubmit() {
     if (!guest) return

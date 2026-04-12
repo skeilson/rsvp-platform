@@ -27,17 +27,17 @@ export default function RSVPLookupPage() {
 
     if (error || !data) {
       setError(config.form.notFoundMessage)
+      await fetch('/api/metrics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'guest_lookup',
+          labels: { result: 'not_found' }
+        })
+      })
       return
     }
 
-    if (data.group_id) {
-      router.push('/rsvp/group/${data.group_id}')
-    } else {
-      router.push('/rsvp/solo/${data.id}')
-    }
-  }
-
-    // On success
     await fetch('/api/metrics/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -46,18 +46,12 @@ export default function RSVPLookupPage() {
         labels: { result: 'found' }
       })
     })
-	   
-    // On failure
-    await fetch('/api/metrics/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event: 'guest_lookup',
-        labels: { result: 'not_found' }
-      })
-    })
 
-    router.push(`/rsvp/${data.id}`)
+    if (data.group_id) {
+      router.push(`/rsvp/group/${data.group_id}`)
+    } else {
+      router.push(`/rsvp/solo/${data.id}`)
+    }
   }
 
   return (
