@@ -10,7 +10,7 @@
     "location": "The Grand Ballroom, New York"
   },
   "rsvp": {
-    "allowChanges": true
+    "allowChanges": false
   },
   "primaryEvent": {
     "name": "Wedding Reception",
