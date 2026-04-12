@@ -18,7 +18,7 @@ export default function RSVPLookupPage() {
 
     const { data, error } = await supabase
       .from('guests')
-      .select('id')
+      .select('id, group_id')
       .ilike('first_name', firstName.trim())
       .ilike('last_name', lastName.trim())
       .single()
@@ -29,6 +29,13 @@ export default function RSVPLookupPage() {
       setError(config.form.notFoundMessage)
       return
     }
+
+    if (data.group_id} {
+      router.push('/rsvp/group/${data.group_id}')
+    } else {
+      router.push('/rsvp/solo/${data.id}')
+    }
+  }
 
     // On success
     await fetch('/api/metrics/track', {
