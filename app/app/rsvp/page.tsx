@@ -30,7 +30,7 @@ export default function RSVPLookupPage() {
       return
     }
 
-    if (data.group_id} {
+    if (data.group_id) {
       router.push('/rsvp/group/${data.group_id}')
     } else {
       router.push('/rsvp/solo/${data.id}')
