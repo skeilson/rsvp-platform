@@ -18,7 +18,7 @@ export default function RSVPLookupPage() {
 
     const { data, error } = await supabase
       .from('guests')
-      .select('id, group_id')
+      .select('id, group_id, has_responded')
       .ilike('first_name', firstName.trim())
       .ilike('last_name', lastName.trim())
       .single()
@@ -49,7 +49,7 @@ export default function RSVPLookupPage() {
 
     // If already responded and changes not allowed, redirect to already responded page
     if (data.has_responded && !config.rsvp.allowChanges) {
-      router.push('/rsvp/already-responded')
+      router.push('/rsvp/responded')
       return
     }
 
