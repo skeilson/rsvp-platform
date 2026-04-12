@@ -42,12 +42,15 @@ export async function POST(request: NextRequest) {
 
     const filteredGuests = tags && tags.length > 0
       ? guests.filter(g =>
-          g.guest_tags?.some((gt: { tags: { name: string }[] }) =>            
-              gt.tags.some(t => tags.includes(t.name))
-          )
+          g.guest_tags?.some((gt: { tags: { name: string } | { name: string }[] }) => {
+            const tagNames = Array.isArray(gt.tags)
+              ? gt.tags.map(t => t.name)
+              : [gt.tags.name]
+            return tagNames.some(name => tags.includes(name))
+          })
         )
       : guests
-
+    
     const results = await Promise.allSettled(
       filteredGuests.map(guest =>
         resend.emails.send({
