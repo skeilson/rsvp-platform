@@ -129,23 +129,20 @@ export default function AdminDashboardPage() {
     <main className="min-h-screen p-8">
       <div className="max-w-5xl mx-auto space-y-8">
 
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-medium">Admin dashboard</h1>
-          <div className="flex items-center gap-4">
+       <div className="flex items-center justify-between">
+         <h1 className="text-3xl font-medium">Admin dashboard</h1>
+         <div className="flex items-center gap-4">
     
-              href="/admin/theme"
-              className="text-sm text-gray-400 underline underline-offset-4"
-            >
-              Theme editor
-            </a>
-    
-              href="/api/admin/logout"
-              className="text-sm text-gray-400 underline underline-offset-4"
-            >
-      Sign out
-    </a>
-  </div>
-</div>
+            href="/admin/theme"
+            className="text-sm text-gray-400 underline underline-offset-4"
+          >
+            Theme editor
+          </a>
+          <a href="/api/admin/logout">
+            <p className="text-sm text-gray-400 underline underline-offset-4">Sign out</p>
+          </a>
+        </div>
+     </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

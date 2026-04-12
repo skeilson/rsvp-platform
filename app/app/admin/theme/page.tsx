@@ -94,7 +94,7 @@ export default function ThemeEditorPage() {
             >
               Back to dashboard
             </button>
-            
+            <a 
               href="/api/admin/logout"
               className="text-sm text-gray-400 underline underline-offset-4"
             >
