@@ -61,7 +61,7 @@ export default function RSVPFormPage() {
     if (!guest) return
     setSubmitting(true)
 
-    await supabase.from('responses').insert({
+    await supabase.from('responses').upsert({
       guest_id: guest.id,
       attending,
       dietary: dietary || null,
@@ -77,7 +77,7 @@ export default function RSVPFormPage() {
         .single()
 
       if (event) {
-        await supabase.from('event_responses').insert({
+        await supabase.from('event_responses').upsert({
           guest_id: guest.id,
           event_id: event.id,
           attending: attendingSecondary,

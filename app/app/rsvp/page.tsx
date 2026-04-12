@@ -47,6 +47,12 @@ export default function RSVPLookupPage() {
       })
     })
 
+    // If already responded and changes not allowed, redirect to already responded page
+    if (data.has_responded && !config.rsvp.allowChanges) {
+      router.push('/rsvp/already-responded')
+      return
+    }
+
     if (data.group_id) {
       router.push(`/rsvp/group/${data.group_id}`)
     } else {

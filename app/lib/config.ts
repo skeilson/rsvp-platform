@@ -8,6 +8,9 @@ export type AppConfig = typeof configData & {
     password: string
     token: string
   }
+  rsvp: {
+    allowChanges: boolean
+  }
 }
 
 export const config: AppConfig = configData as AppConfig

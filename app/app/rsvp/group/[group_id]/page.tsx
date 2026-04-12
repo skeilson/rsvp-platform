@@ -102,7 +102,7 @@ export default function GroupRSVPPage() {
       const r = responses[guest.id]
       if (r.attending === null) continue
 
-      await supabase.from('responses').insert({
+      await supabase.from('responses').upsert({
         guest_id: guest.id,
         attending: r.attending,
         dietary: r.dietary || null,
@@ -111,7 +111,7 @@ export default function GroupRSVPPage() {
       })
 
       if (isSecondaryEligible(guest) && r.attendingSecondary !== null && event) {
-        await supabase.from('event_responses').insert({
+        await supabase.from('event_responses').upsert({
           guest_id: guest.id,
           event_id: event.id,
           attending: r.attendingSecondary,

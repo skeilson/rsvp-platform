@@ -9,6 +9,9 @@
     "date": "October 18, 2026",
     "location": "The Grand Ballroom, New York"
   },
+  "rsvp": {
+    "allowChanges": true
+  },
   "primaryEvent": {
     "name": "Wedding Reception",
     "acceptLabel": "Joyfully accepts",
