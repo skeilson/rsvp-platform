@@ -133,7 +133,7 @@ export default function AdminDashboardPage() {
          <h1 className="text-3xl font-medium">Admin dashboard</h1>
          <div className="flex items-center gap-4">
     
-            href="/admin/theme"
+         <a href="/admin/theme"
             className="text-sm text-gray-400 underline underline-offset-4"
           >
             Theme editor
