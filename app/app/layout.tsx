@@ -65,7 +65,7 @@ export default async function RootLayout({
       --color-accent: ${accentColor};
       --font-theme: ${fontVar};
     }
-    body {
+    body:not(.admin-page) {
       background-color: var(--color-background);
       font-family: var(--font-theme), sans-serif;
     }
