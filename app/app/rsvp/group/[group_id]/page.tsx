@@ -32,6 +32,26 @@ const defaultResponse = (): GuestResponse => ({
   meal: '',
 })
 
+const inputStyle = {
+  border: '1px solid var(--color-primary)',
+  color: 'var(--color-primary)',
+  backgroundColor: 'transparent',
+  opacity: 0.8,
+}
+
+const buttonActiveStyle = {
+  backgroundColor: 'var(--color-primary)',
+  color: 'var(--color-background)',
+  borderColor: 'var(--color-primary)',
+}
+
+const buttonInactiveStyle = {
+  backgroundColor: 'transparent',
+  color: 'var(--color-primary)',
+  borderColor: 'var(--color-primary)',
+  opacity: 0.5,
+}
+
 export default function GroupRSVPPage() {
   const { group_id } = useParams()
   const router = useRouter()
@@ -141,15 +161,26 @@ export default function GroupRSVPPage() {
   const allAnswered = guests.every(g => responses[g.id]?.attending !== null)
 
   if (loading) return (
-    <main className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-400">Loading your invitation...</p>
+    <main
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: 'var(--color-background)' }}
+    >
+      <p style={{ color: 'var(--color-primary)', opacity: 0.5 }}>
+        Loading your invitation...
+      </p>
     </main>
   )
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
+    <main
+      className="min-h-screen flex items-center justify-center p-8"
+      style={{ backgroundColor: 'var(--color-background)' }}
+    >
       <div className="w-full max-w-md space-y-10">
-        <h1 className="text-3xl font-medium text-center">
+        <h1
+          className="text-3xl font-medium text-center"
+          style={{ color: 'var(--color-primary)' }}
+        >
           {guests.map(g => g.first_name).join(' & ')}
         </h1>
 
@@ -159,22 +190,35 @@ export default function GroupRSVPPage() {
           const eligible = isSecondaryEligible(guest)
 
           return (
-            <div key={guest.id} className="space-y-6 border-t pt-6 first:border-t-0 first:pt-0">
-              <h2 className="text-xl font-medium">{guest.first_name} {guest.last_name}</h2>
+            <div
+              key={guest.id}
+              className="space-y-6 pt-6 first:pt-0"
+              style={{ borderTop: '1px solid var(--color-primary)', opacity: 1 }}
+            >
+              <h2
+                className="text-xl font-medium"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                {guest.first_name} {guest.last_name}
+              </h2>
 
               {/* Primary attendance */}
               <div className="space-y-3">
-                <p className="font-medium">Will you be attending {config.primaryEvent.name}?</p>
+                <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                  Will you be attending {config.primaryEvent.name}?
+                </p>
                 <div className="flex gap-4">
                   <button
                     onClick={() => updateResponse(guest.id, 'attending', true)}
-                    className={`flex-1 py-3 rounded-lg border font-medium ${r.attending === true ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300'}`}
+                    className="flex-1 py-3 rounded-lg border font-medium"
+                    style={r.attending === true ? buttonActiveStyle : buttonInactiveStyle}
                   >
                     {config.primaryEvent.acceptLabel}
                   </button>
                   <button
                     onClick={() => updateResponse(guest.id, 'attending', false)}
-                    className={`flex-1 py-3 rounded-lg border font-medium ${r.attending === false ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300'}`}
+                    className="flex-1 py-3 rounded-lg border font-medium"
+                    style={r.attending === false ? buttonActiveStyle : buttonInactiveStyle}
                   >
                     {config.primaryEvent.declineLabel}
                   </button>
@@ -185,52 +229,68 @@ export default function GroupRSVPPage() {
               {r.attending === true && (
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <p className="font-medium">{config.form.dietaryLabel}</p>
+                    <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                      {config.form.dietaryLabel}
+                    </p>
                     <input
                       type="text"
                       placeholder={config.form.dietaryPlaceholder}
                       value={r.dietary}
                       onChange={e => updateResponse(guest.id, 'dietary', e.target.value)}
-                      className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                      style={inputStyle}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <p className="font-medium">{config.form.songLabel}</p>
+                    <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                      {config.form.songLabel}
+                    </p>
                     <input
                       type="text"
                       placeholder={config.form.songPlaceholder}
                       value={r.songRequest}
                       onChange={e => updateResponse(guest.id, 'songRequest', e.target.value)}
-                      className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                      style={inputStyle}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <p className="font-medium">{config.form.noteLabel}</p>
+                    <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                      {config.form.noteLabel}
+                    </p>
                     <textarea
                       placeholder={config.form.notePlaceholder}
                       value={r.note}
                       onChange={e => updateResponse(guest.id, 'note', e.target.value)}
                       rows={3}
-                      className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+                      className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                      style={inputStyle}
                     />
                   </div>
 
                   {/* Secondary event */}
                   {eligible && (
-                    <div className="space-y-3 border-t pt-6">
-                      <p className="font-medium">{config.secondaryEvent.question}</p>
+                    <div
+                      className="space-y-3 pt-6"
+                      style={{ borderTop: '1px solid var(--color-primary)' }}
+                    >
+                      <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                        {config.secondaryEvent.question}
+                      </p>
                       <div className="flex gap-4">
                         <button
                           onClick={() => updateResponse(guest.id, 'attendingSecondary', true)}
-                          className={`flex-1 py-3 rounded-lg border font-medium ${r.attendingSecondary === true ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300'}`}
+                          className="flex-1 py-3 rounded-lg border font-medium"
+                          style={r.attendingSecondary === true ? buttonActiveStyle : buttonInactiveStyle}
                         >
                           Yes
                         </button>
                         <button
                           onClick={() => updateResponse(guest.id, 'attendingSecondary', false)}
-                          className={`flex-1 py-3 rounded-lg border font-medium ${r.attendingSecondary === false ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300'}`}
+                          className="flex-1 py-3 rounded-lg border font-medium"
+                          style={r.attendingSecondary === false ? buttonActiveStyle : buttonInactiveStyle}
                         >
                           No
                         </button>
@@ -239,13 +299,16 @@ export default function GroupRSVPPage() {
                       {r.attendingSecondary === true && (
                         <div className="space-y-4 pt-2">
                           <div className="space-y-2">
-                            <p className="font-medium">{config.secondaryForm.mealLabel}</p>
+                            <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                              {config.secondaryForm.mealLabel}
+                            </p>
                             <input
                               type="text"
                               placeholder={config.secondaryForm.mealPlaceholder}
                               value={r.meal}
                               onChange={e => updateResponse(guest.id, 'meal', e.target.value)}
-                              className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+                              className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                              style={inputStyle}
                             />
                           </div>
 
@@ -257,7 +320,11 @@ export default function GroupRSVPPage() {
                               onChange={e => updateResponse(guest.id, 'shuttle', e.target.checked)}
                               className="w-4 h-4"
                             />
-                            <label htmlFor={`shuttle-${guest.id}`} className="text-base">
+                            <label
+                              htmlFor={`shuttle-${guest.id}`}
+                              className="text-base"
+                              style={{ color: 'var(--color-primary)' }}
+                            >
                               {config.secondaryForm.shuttleLabel}
                             </label>
                           </div>
@@ -271,13 +338,16 @@ export default function GroupRSVPPage() {
               {/* Attending NO path */}
               {r.attending === false && (
                 <div className="space-y-2">
-                  <p className="font-medium">{config.form.declineNoteLabel}</p>
+                  <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                    {config.form.declineNoteLabel}
+                  </p>
                   <textarea
                     placeholder={config.form.declineNotePlaceholder}
                     value={r.note}
                     onChange={e => updateResponse(guest.id, 'note', e.target.value)}
                     rows={3}
-                    className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                    style={inputStyle}
                   />
                 </div>
               )}
@@ -290,7 +360,8 @@ export default function GroupRSVPPage() {
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
+            className="w-full rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
+            style={buttonActiveStyle}
           >
             {submitting ? 'Submitting...' : config.form.submitButton}
           </button>

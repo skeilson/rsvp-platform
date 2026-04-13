@@ -31,12 +31,21 @@ export default function RSVPLoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
+    <main
+      className="min-h-screen flex items-center justify-center p-8"
+      style={{ backgroundColor: 'var(--color-background)' }}
+    >
       <div className="w-full max-w-sm space-y-6">
-        <h1 className="text-3xl font-medium text-center">
+        <h1
+          className="text-3xl font-medium text-center"
+          style={{ color: 'var(--color-primary)' }}
+        >
           {config.event.name}
         </h1>
-        <p className="text-center text-gray-500">
+        <p
+          className="text-center"
+          style={{ color: 'var(--color-primary)', opacity: 0.6 }}
+        >
           Enter your access password to continue
         </p>
 
@@ -47,7 +56,13 @@ export default function RSVPLoginPage() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+            className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+            style={{
+              border: '1px solid var(--color-primary)',
+              color: 'var(--color-primary)',
+              backgroundColor: 'transparent',
+              opacity: 0.8,
+            }}
           />
 
           {error && (
@@ -57,7 +72,11 @@ export default function RSVPLoginPage() {
           <button
             onClick={handleLogin}
             disabled={loading || !password}
-            className="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
+            className="w-full rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--color-primary)',
+              color: 'var(--color-background)',
+            }}
           >
             {loading ? 'Checking...' : 'Continue'}
           </button>
