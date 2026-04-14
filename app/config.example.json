@@ -54,7 +54,7 @@
   ]
   "secondaryForm": {
     "mealLabel": "Meal preference",
-    "mealPlaceholder": "Chicken, fish, vegetarian...",
+    "mealPlaceholder": "Chicken, fish, vegetarian..."
   },
   "confirmation": {
     "title": "You're all set",
