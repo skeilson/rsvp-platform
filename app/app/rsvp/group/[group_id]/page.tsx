@@ -20,6 +20,7 @@ type GuestResponse = {
   songRequest: string
   note: string
   attendingSecondary: boolean | null
+  shuttle: boolean | null
   meal: string
 }
 
@@ -29,6 +30,7 @@ const defaultResponse = (): GuestResponse => ({
   songRequest: '',
   note: '',
   attendingSecondary: null,
+  shuttle: null,
   meal: '',
 })
 
