@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
+import CustomQuestions from '@/components/customQuestions'
+import { saveCustomAnswers } from '@/lib/customAnswers'
 
 type Guest = {
   id: string
@@ -42,10 +44,10 @@ export default function RSVPFormPage() {
   const [songRequest, setSongRequest] = useState('')
   const [note, setNote] = useState('')
   const [attendingSecondary, setAttendingSecondary] = useState<boolean | null>(null)
-  const [shuttle, setShuttle] = useState(false)
   const [meal, setMeal] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({})
 
   const isSecondaryEligible = config.secondaryEvent.enabled &&
     guest?.guest_tags?.some(t => t.tags.name === config.secondaryEvent.tag)
@@ -101,7 +103,6 @@ export default function RSVPFormPage() {
           guest_id: guest.id,
           event_id: event.id,
           attending: attendingSecondary,
-          shuttle: attendingSecondary ? shuttle : false,
           meal: attendingSecondary ? meal || null : null,
         })
       }
@@ -111,6 +112,8 @@ export default function RSVPFormPage() {
       .from('guests')
       .update({ has_responded: true })
       .eq('id', guest.id)
+
+    await saveCustomAnswers(guest.id, customAnswers)
 
     await fetch('/api/metrics/track', {
       method: 'POST',
@@ -122,6 +125,10 @@ export default function RSVPFormPage() {
     })
 
     router.push('/rsvp/confirmation')
+  }
+
+  function handleCustomAnswer(questionId: string, answer: string) {
+    setCustomAnswers(prev => ({ ...prev, [questionId]: answer }))
   }
 
   if (loading) return (
@@ -216,10 +223,20 @@ export default function RSVPFormPage() {
               />
             </div>
 
+            <CustomQuestions
+              questions={config.customQuestions ?? []}
+              answers={customAnswers}
+              onChange={handleCustomAnswer}
+              showWhen="attending"
+            />
+
             {/* Secondary event */}
             {isSecondaryEligible && (
-              <div className="space-y-3 pt-6" style={{ borderTop: '1px solid var(--color-primary)', opacity: 0.3 }}>
-                <p className="font-medium" style={{ color: 'var(--color-primary)', opacity: 1 }}>
+              <div
+                className="space-y-3 pt-6"
+                style={{ borderTop: '1px solid var(--color-primary)' }}
+              >
+                <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
                   {config.secondaryEvent.question}
                 </p>
                 <div className="flex gap-4">
@@ -254,23 +271,6 @@ export default function RSVPFormPage() {
                         style={inputStyle}
                       />
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="shuttle"
-                        checked={shuttle}
-                        onChange={e => setShuttle(e.target.checked)}
-                        className="w-4 h-4"
-                      />
-                      <label
-                        htmlFor="shuttle"
-                        className="text-base"
-                        style={{ color: 'var(--color-primary)' }}
-                      >
-                        {config.secondaryForm.shuttleLabel}
-                      </label>
-                    </div>
                   </div>
                 )}
               </div>
@@ -294,6 +294,13 @@ export default function RSVPFormPage() {
             />
           </div>
         )}
+
+        <CustomQuestions
+          questions={config.customQuestions ?? []}
+          answers={customAnswers}
+          onChange={handleCustomAnswer}
+          showWhen="always"
+        />
 
         {attending !== null && (
           <button

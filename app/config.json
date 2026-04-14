@@ -38,10 +38,23 @@
     "declineNotePlaceholder": "Share a message or well wishes...",
     "submitButton": "Submit RSVP"
   },
+  "customQuestions": [
+    {
+      "id": "shuttle",
+      "label": "Do you need shuttle service?",
+      "type": "choice",
+      "required": false,
+      "showWhen": "attending",
+      "options": [
+        "No shuttle needed",
+        "Hotel 1 pickup",
+        "Hotel 2 pickup"
+      ]
+    }
+  ]
   "secondaryForm": {
     "mealLabel": "Meal preference",
     "mealPlaceholder": "Chicken, fish, vegetarian...",
-    "shuttleLabel": "I would like to use the shuttle service"
   },
   "confirmation": {
     "title": "You're all set",

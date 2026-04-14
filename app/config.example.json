@@ -1,24 +1,27 @@
 {
-  "access": {
-    "type": "none",
-    "password": "",
-    "token": ""
+ "access": {
+   "type": "none",
+   "password": "",
+   "token": ""
   },
   "event": {
-    "name": "Your Names Here",
-    "date": "Month Day, Year",
-    "location": "Venue Name, City"
+    "name": "Sarah & James",
+    "date": "October 18, 2026",
+    "location": "The Grand Ballroom, New York"
+  },
+  "rsvp": {
+    "allowChanges": false
   },
   "primaryEvent": {
-    "name": "Your Primary Event Name",
+    "name": "Wedding Reception",
     "acceptLabel": "Joyfully accepts",
     "declineLabel": "Regretfully declines"
   },
   "secondaryEvent": {
-    "enabled": false,
-    "name": "Your Secondary Event Name",
-    "tag": "secondary-event-tag",
-    "question": "Will you be joining us for the [Secondary Event]?"
+    "enabled": true,
+    "name": "Rehearsal Dinner",
+    "tag": "rehearsal-dinner",
+    "question": "Will you be joining us for the Rehearsal Dinner?"
   },
   "form": {
     "lookupTitle": "RSVP",
@@ -29,20 +32,33 @@
     "dietaryPlaceholder": "None, vegetarian, gluten-free...",
     "songLabel": "Song request",
     "songPlaceholder": "A song that will get you on the dance floor",
-    "noteLabel": "Leave a note",
-    "notePlaceholder": "Share a message or well wishes...",
-    "declineNoteLabel": "Leave a note",
+    "noteLabel": "Note to the couple",
+    "notePlaceholder": "Share a message, memory, or well wishes...",
+    "declineNoteLabel": "Leave a note for the couple",
     "declineNotePlaceholder": "Share a message or well wishes...",
     "submitButton": "Submit RSVP"
   },
+  "customQuestions": [
+    {
+      "id": "shuttle",
+      "label": "Do you need shuttle service?",
+      "type": "choice",
+      "required": false,
+      "showWhen": "attending",
+      "options": [
+        "No shuttle needed",
+        "Hotel 1 pickup",
+        "Hotel 2 pickup"
+      ]
+    }
+  ]
   "secondaryForm": {
     "mealLabel": "Meal preference",
     "mealPlaceholder": "Chicken, fish, vegetarian...",
-    "shuttleLabel": "I would like to use the shuttle service"
   },
   "confirmation": {
     "title": "You're all set",
-    "message": "Thank you for your RSVP."
+    "message": "Thank you for your RSVP. We look forward to celebrating with you."
   },
   "theme": {
     "primaryColor": "#111111",

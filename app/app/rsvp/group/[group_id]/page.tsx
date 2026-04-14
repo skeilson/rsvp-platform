@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
+import CustomQuestions from '@/components/customQuestions'
+import { saveCustomAnswers } from '@/lib/customAnswers'
 
 type Guest = {
   id: string
@@ -18,7 +20,6 @@ type GuestResponse = {
   songRequest: string
   note: string
   attendingSecondary: boolean | null
-  shuttle: boolean
   meal: string
 }
 
@@ -28,7 +29,6 @@ const defaultResponse = (): GuestResponse => ({
   songRequest: '',
   note: '',
   attendingSecondary: null,
-  shuttle: false,
   meal: '',
 })
 
@@ -60,6 +60,7 @@ export default function GroupRSVPPage() {
   const [responses, setResponses] = useState<Record<string, GuestResponse>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [customAnswers, setCustomAnswers] = useState<Record<string, Record<string, string>>>({})
 
   useEffect(() => {
     async function fetchGroup() {
@@ -135,7 +136,6 @@ export default function GroupRSVPPage() {
           guest_id: guest.id,
           event_id: event.id,
           attending: r.attendingSecondary,
-          shuttle: r.attendingSecondary ? r.shuttle : false,
           meal: r.attendingSecondary ? r.meal || null : null,
         })
       }
@@ -144,6 +144,8 @@ export default function GroupRSVPPage() {
         .from('guests')
         .update({ has_responded: true })
         .eq('id', guest.id)
+
+      await saveCustomAnswers(guest.id, customAnswers[guest.id] ?? {})
 
       await fetch('/api/metrics/track', {
         method: 'POST',
@@ -159,6 +161,16 @@ export default function GroupRSVPPage() {
   }
 
   const allAnswered = guests.every(g => responses[g.id]?.attending !== null)
+
+  function handleCustomAnswer(guestId: string, questionId: string, answer: string) {
+    setCustomAnswers(prev => ({
+      ...prev,
+      [guestId]: {
+        ...prev[guestId],
+        [questionId]: answer,
+      }
+    }))
+  }
 
   if (loading) return (
     <main
@@ -270,6 +282,13 @@ export default function GroupRSVPPage() {
                     />
                   </div>
 
+                  <CustomQuestions
+                    questions={config.customQuestions ?? []}
+                    answers={customAnswers[guest.id] ?? {}}
+                    onChange={(questionId, answer) => handleCustomAnswer(guest.id, questionId, answer)}
+                    showWhen="attending"
+                  />
+
                   {/* Secondary event */}
                   {eligible && (
                     <div
@@ -354,6 +373,16 @@ export default function GroupRSVPPage() {
             </div>
           )
         })}
+
+        {guests.map(guest => (
+          <CustomQuestions
+            key={guest.id}
+            questions={config.customQuestions ?? []}
+            answers={customAnswers[guest.id] ?? {}}
+            onChange={(questionId, answer) => handleCustomAnswer(guest.id, questionId, answer)}
+            showWhen="always"
+          />
+        ))}
 
         {/* Submit */}
         {allAnswered && (

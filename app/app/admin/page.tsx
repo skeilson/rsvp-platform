@@ -19,6 +19,10 @@ type GuestWithResponse = {
   guest_tags: {
     tags: { name: string }
   }[]
+  custom_answers: {
+    question_id: string
+    answer: string
+  }[]
 }
 
 export default function AdminDashboardPage() {
@@ -51,6 +55,10 @@ export default function AdminDashboardPage() {
           ),
           guest_tags (
             tags ( name )
+          ),
+          custom_answers (
+            question_id,
+            answer
           )
         `)
         .order('last_name', { ascending: true })
@@ -227,6 +235,23 @@ export default function AdminDashboardPage() {
                     {response.note && (
                       <p><span className="font-medium text-gray-700">Note:</span> {response.note}</p>
                     )}
+
+                    {guest.custom_answers?.length > 0 && (
+                      <div className="space-y-1">
+                        {guest.custom_answers.map(ca => {
+                          const question = config.customQuestions?.find(q => q.id === ca.question_id)
+                          return (
+                            <p key={ca.question_id}>
+                              <span className="font-medium text-gray-700">
+                                {question?.label ?? ca.question_id}:
+                              </span>{' '}
+                             {ca.answer}
+                            </p>
+                          )
+                        })}
+                      </div>
+                    )}
+
                     <button
                       onClick={() => handleDelete(response.id, guest.id)}
                       className="text-red-500 text-xs underline underline-offset-2 pt-1"
