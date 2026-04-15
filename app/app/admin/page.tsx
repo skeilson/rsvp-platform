@@ -146,15 +146,13 @@ export default function AdminDashboardPage() {
           <h1 className="text-3xl font-medium">Admin dashboard</h1>
           <div className="flex items-center gap-4">
             
-              href="/admin/theme"
-              className="text-sm text-gray-400 underline underline-offset-4"
-            >
+              <a href="/admin/theme"
+              <p>className="text-sm text-gray-400 underline underline-offset-4"</p>
               Theme editor
             </a>
             
-              href="/api/admin/logout"
-              className="text-sm text-gray-400 underline underline-offset-4"
-            >
+              <a href="/api/admin/logout"
+              <p>className="text-sm text-gray-400 underline underline-offset-4"</p>
               Sign out
             </a>
           </div>
