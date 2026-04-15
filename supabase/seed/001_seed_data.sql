@@ -20,6 +20,8 @@ INSERT INTO tags (id, name) VALUES
   ('aaaaaaaa-bbbb-cccc-dddd-111111111111', 'rehearsal-dinner'),
   ('aaaaaaaa-bbbb-cccc-dddd-222222222222', 'out-of-town'),
   ('aaaaaaaa-bbbb-cccc-dddd-333333333333', 'shuttle-eligible');
+  ('aaaaaaaa-bbbb-cccc-dddd-444444444444', 'hotel-1-shuttle'),
+  ('aaaaaaaa-bbbb-cccc-dddd-555555555555', 'hotel-2-shuttle')
 
 -- Guest tags
 INSERT INTO guest_tags (guest_id, tag_id) VALUES

@@ -9,6 +9,7 @@ export type CustomQuestion = {
   required: boolean
   showWhen: 'attending' | 'always' | 'secondary'
   options?: string[]
+  tagOnAnswer?: Record<string, string>
 }
 
 export type AppConfig = typeof configData & {

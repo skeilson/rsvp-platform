@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
 import CustomQuestions from '@/components/customQuestions'
-import { saveCustomAnswers } from '@/components/customAnswers'
+import { saveCustomAnswers, applyTagsFromAnswers} from '@/lib/customAnswers'
 
 type Guest = {
   id: string
@@ -114,6 +114,7 @@ export default function RSVPFormPage() {
       .eq('id', guest.id)
 
     await saveCustomAnswers(guest.id, customAnswers)
+    await applyTagsFromAnswers(guest.id, customAsnwers, config.customQuestions ?? [])
 
     await fetch('/api/metrics/track', {
       method: 'POST',

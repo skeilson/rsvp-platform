@@ -49,7 +49,11 @@
         "No shuttle needed",
         "Hotel 1 pickup",
         "Hotel 2 pickup"
-      ]
+      ],
+      "tagOnAnswer": {
+	"Hotel 1 pickup": "hotel-1-shuttle",
+	"Hotel 2 pickup": "hotel-2-shuttle"
+      }
     }
   ],
   "secondaryForm": {
