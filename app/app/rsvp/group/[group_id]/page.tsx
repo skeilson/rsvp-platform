@@ -146,7 +146,7 @@ export default function GroupRSVPPage() {
         .eq('id', guest.id)
 
       await saveCustomAnswers(guest.id, customAnswers[guest.id] ?? {})
-      await applyTagsFromAnswers(guest.id, customAnswers[guest.id] ?? {}, config.customQuestions[guest.id] ?? [])
+      await applyTagsFromAnswers(guest.id, customAnswers[guest.id] ?? {}, config.customQuestions ?? [])
 
       await fetch('/api/metrics/track', {
         method: 'POST',
