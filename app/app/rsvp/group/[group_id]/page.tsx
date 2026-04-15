@@ -349,6 +349,8 @@ export default function GroupRSVPPage() {
                 </div>
               )}
             </div>
+             )}
+           </div>
           )
         })}
 
