@@ -85,7 +85,11 @@ export default function AdminDashboardPage() {
   async function handleDelete(responseId: string, guestId: string) {
     if (!confirm('Are you sure you want to delete this RSVP?')) return
 
-    await supabase.from('responses').delete().eq('id', responseId)
+    if (responseId) {
+      await supabase.from('responses').delete().eq('id', responseId)
+    }
+    await supabase.from('event_responses').delete().eq('guest_id', guestId)
+    await supabase.from('custom_answers').delete().eq('guest_id', guestId)
     await supabase
       .from('guests')
       .update({ has_responded: false })
@@ -138,20 +142,23 @@ export default function AdminDashboardPage() {
     <main className="min-h-screen p-8">
       <div className="max-w-5xl mx-auto space-y-8">
 
-       <div className="flex items-center justify-between">
-         <h1 className="text-3xl font-medium">Admin dashboard</h1>
-         <div className="flex items-center gap-4">
-    
-         <a href="/admin/theme"
-            className="text-sm text-gray-400 underline underline-offset-4"
-          >
-            Theme editor
-          </a>
-          <a href="/api/admin/logout">
-            <p className="text-sm text-gray-400 underline underline-offset-4">Sign out</p>
-          </a>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-medium">Admin dashboard</h1>
+          <div className="flex items-center gap-4">
+            
+              href="/admin/theme"
+              className="text-sm text-gray-400 underline underline-offset-4"
+            >
+              Theme editor
+            </a>
+            
+              href="/api/admin/logout"
+              className="text-sm text-gray-400 underline underline-offset-4"
+            >
+              Sign out
+            </a>
+          </div>
         </div>
-     </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -236,7 +243,6 @@ export default function AdminDashboardPage() {
                     {response.note && (
                       <p><span className="font-medium text-gray-700">Note:</span> {response.note}</p>
                     )}
-
                     {guest.custom_answers?.length > 0 && (
                       <div className="space-y-1">
                         {guest.custom_answers.map(ca => {
@@ -246,18 +252,28 @@ export default function AdminDashboardPage() {
                               <span className="font-medium text-gray-700">
                                 {question?.label ?? ca.question_id}:
                               </span>{' '}
-                             {ca.answer}
+                              {ca.answer}
                             </p>
                           )
                         })}
                       </div>
                     )}
-
                     <button
                       onClick={() => handleDelete(response.id, guest.id)}
                       className="text-red-500 text-xs underline underline-offset-2 pt-1"
                     >
                       Delete RSVP
+                    </button>
+                  </div>
+                )}
+
+                {!response && guest.has_responded && (
+                  <div className="border-t pt-3">
+                    <button
+                      onClick={() => handleDelete('', guest.id)}
+                      className="text-red-500 text-xs underline underline-offset-2"
+                    >
+                      Reset RSVP
                     </button>
                   </div>
                 )}
