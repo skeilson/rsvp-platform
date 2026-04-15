@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
-import CustomQuestions from '@/components/CustomQuestions'
-import { saveCustomAnswers } from '@/lib/customAnswers'
+import CustomQuestions from '@/components/customQuestions'
+import { saveCustomAnswers } from '@/components/customAnswers'
 
 type Guest = {
   id: string
