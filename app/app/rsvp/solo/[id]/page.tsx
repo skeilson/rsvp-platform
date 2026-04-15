@@ -114,7 +114,7 @@ export default function RSVPFormPage() {
       .eq('id', guest.id)
 
     await saveCustomAnswers(guest.id, customAnswers)
-    await applyTagsFromAnswers(guest.id, customAsnwers, config.customQuestions ?? [])
+    await applyTagsFromAnswers(guest.id, customAnswers, config.customQuestions ?? [])
 
     await fetch('/api/metrics/track', {
       method: 'POST',
