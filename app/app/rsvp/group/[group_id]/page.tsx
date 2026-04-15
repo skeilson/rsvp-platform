@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
-import CustomQuestions from '@/components/customQuestions'
-import { saveCustomAnswers } from '@/components/customAnswers'
+import CustomQuestions from '@/components/CustomQuestions'
+import { saveCustomAnswers } from '@/lib/customAnswers'
 
 type Guest = {
   id: string
@@ -29,7 +29,6 @@ const defaultResponse = (): GuestResponse => ({
   songRequest: '',
   note: '',
   attendingSecondary: null,
-  shuttle: null,
   meal: '',
 })
 
@@ -331,6 +330,12 @@ export default function GroupRSVPPage() {
                               style={inputStyle}
                             />
                           </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Attending NO path */}
               {r.attending === false && (
@@ -349,8 +354,6 @@ export default function GroupRSVPPage() {
                 </div>
               )}
             </div>
-             )}
-           </div>
           )
         })}
 
