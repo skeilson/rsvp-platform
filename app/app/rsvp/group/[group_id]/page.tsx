@@ -20,7 +20,6 @@ type GuestResponse = {
   songRequest: string
   note: string
   attendingSecondary: boolean | null
-  shuttle: boolean | null
   meal: string
 }
 
@@ -332,29 +331,6 @@ export default function GroupRSVPPage() {
                               style={inputStyle}
                             />
                           </div>
-
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              id={`shuttle-${guest.id}`}
-                              checked={r.shuttle}
-                              onChange={e => updateResponse(guest.id, 'shuttle', e.target.checked)}
-                              className="w-4 h-4"
-                            />
-                            <label
-                              htmlFor={`shuttle-${guest.id}`}
-                              className="text-base"
-                              style={{ color: 'var(--color-primary)' }}
-                            >
-                              {config.secondaryForm.shuttleLabel}
-                            </label>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Attending NO path */}
               {r.attending === false && (
