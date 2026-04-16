@@ -35,6 +35,7 @@ export default function AdminDashboardPage() {
   const [emailSubject, setEmailSubject] = useState('')
   const [emailMessage, setEmailMessage] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [editingTagsFor, setEditingTagsFor] = useState<string | null>(null)
   const [availableTags, setAvailableTags] = useState<string[]>([])
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ sent: number, failed: number, total: number } | null>(null)
@@ -97,6 +98,42 @@ export default function AdminDashboardPage() {
     void fetchGuests()
   }
 
+  async function handleAddTag(guestId: string, tagName: string) {
+    const { data: tag } = await supabase
+      .from('tags')
+      .select('id')
+      .eq('name', tagName)
+      .single()
+
+    if (!tag) return
+
+    await fetch('/api/admin/guest-tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guestId, tagId: tag.id }),
+    })
+
+    void fetchGuests()
+  }
+
+  async function handleRemoveTag(guestId: string, tagName: string) {
+    const { data: tag } = await supabase
+      .from('tags')
+      .select('id')
+      .eq('name', tagName)
+      .single()
+
+    if (!tag) return
+
+    await fetch('/api/admin/guest-tags', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guestId, tagId: tag.id }),
+    })
+
+    void fetchGuests()
+  }
+
   async function handleEmailBlast() {
     if (!emailSubject || !emailMessage) return
     setSending(true)
@@ -152,13 +189,13 @@ export default function AdminDashboardPage() {
           <h1 className="text-3xl font-medium">Admin dashboard</h1>
           <div className="flex items-center gap-4">
             
-              <a href="/admin/theme"
+              href="/admin/theme"
               className="text-sm text-gray-400 underline underline-offset-4"
             >
               Theme editor
             </a>
             
-              <a href="/api/admin/logout"
+              href="/api/admin/logout"
               className="text-sm text-gray-400 underline underline-offset-4"
             >
               Sign out
@@ -248,19 +285,72 @@ export default function AdminDashboardPage() {
                     {guest.email && (
                       <p className="text-sm text-gray-500">{guest.email}</p>
                     )}
-                    {tags.length > 0 && (
-                      <div className="flex gap-2 mt-1">
-                        {tags.map(tag => (
-                          <span
-                            key={tag}
-                            className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
+
+                    {/* Tag management */}
+                    <div className="mt-2">
+                      {editingTagsFor === guest.id ? (
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-1">
+                            {tags.map(tag => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
+                              >
+                                {tag}
+                                <button
+                                  onClick={() => handleRemoveTag(guest.id, tag)}
+                                  className="text-gray-400 hover:text-red-500 font-medium"
+                                >
+                                  x
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {availableTags
+                              .filter(t => !tags.includes(t))
+                              .map(tag => (
+                                <button
+                                  key={tag}
+                                  onClick={() => handleAddTag(guest.id, tag)}
+                                  className="text-xs border border-dashed border-gray-300 text-gray-400 px-2 py-0.5 rounded-full hover:border-gray-500 hover:text-gray-600"
+                                >
+                                  + {tag}
+                                </button>
+                              ))}
+                          </div>
+                          <button
+                            onClick={() => setEditingTagsFor(null)}
+                            className="text-xs text-gray-400 underline underline-offset-2"
                           >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                            Done
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          {tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {tags.map(tag => (
+                                <span
+                                  key={tag}
+                                  className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <button
+                            onClick={() => setEditingTagsFor(guest.id)}
+                            className="text-xs text-gray-400 underline underline-offset-2"
+                          >
+                            Edit tags
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
+
                   <span className={`text-sm px-2 py-1 rounded-full ${
                     !guest.has_responded
                       ? 'bg-yellow-50 text-yellow-700'
