@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
 import CustomQuestions from '@/components/customQuestions'
 import { saveCustomAnswers, applyTagsFromAnswers } from '@/lib/customAnswers'
+import ThemeImages from '@/components/themeImages'
 
 type Guest = {
   id: string
@@ -175,7 +176,7 @@ export default function GroupRSVPPage() {
 
   if (loading) return (
     <main
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen flex flex-col items-center justify-center"
       style={{ backgroundColor: 'var(--color-background)' }}
     >
       <p style={{ color: 'var(--color-primary)', opacity: 0.5 }}>
@@ -186,10 +187,11 @@ export default function GroupRSVPPage() {
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center p-8"
+      className="min-h-screen flex flex-col items-center justify-center p-8"
       style={{ backgroundColor: 'var(--color-background)' }}
     >
       <div className="w-full max-w-md space-y-10">
+	<ThemeImages />
         <h1
           className="text-3xl font-medium text-center"
           style={{ color: 'var(--color-primary)' }}

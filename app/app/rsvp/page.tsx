@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
+import ThemeImages from '@/components/themeImages'
 
 export default function RSVPLookupPage() {
   const router = useRouter()
@@ -61,10 +62,11 @@ export default function RSVPLookupPage() {
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center p-8"
+      className="min-h-screen flex flex-col items-center p-8"
       style={{ backgroundColor: 'var(--color-background)' }}
     >
       <div className="w-full max-w-md space-y-6">
+	<ThemeImages />
         <h1
           className="text-3xl font-medium text-center"
           style={{ color: 'var(--color-primary)' }}
