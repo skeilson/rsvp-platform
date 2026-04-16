@@ -192,7 +192,7 @@ export default function AdminDashboardPage() {
         <div className="space-y-3">
           {filtered.map(guest => {
             const response = guest.responses?.sort((a, b) =>
- 	      new Date(b.submitted_at ?? 0.getTime() - new Date(a.submitted_at ?? 0).getTime())[0]
+ 	      new Date(b.submitted_at ?? 0).getTime() - new Date(a.submitted_at ?? 0).getTime())[0]
             const tags = guest.guest_tags?.map(gt => gt.tags.name) ?? []
 
             return (
