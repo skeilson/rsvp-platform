@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
 import CustomQuestions from '@/components/customQuestions'
-import { saveCustomAnswers, applyTagsFromAnswers} from '@/lib/customAnswers'
+import { saveCustomAnswers, applyTagsFromAnswers } from '@/lib/customAnswers'
 import ThemeImages from '@/components/themeImages'
 
 type Guest = {
@@ -41,6 +41,7 @@ export default function RSVPFormPage() {
 
   const [guest, setGuest] = useState<Guest | null>(null)
   const [attending, setAttending] = useState<boolean | null>(null)
+  const [email, setEmail] = useState('')
   const [dietary, setDietary] = useState('')
   const [songRequest, setSongRequest] = useState('')
   const [note, setNote] = useState('')
@@ -61,6 +62,7 @@ export default function RSVPFormPage() {
           id,
           first_name,
           last_name,
+          email,
           guest_tags (
             tags ( name )
           )
@@ -74,6 +76,8 @@ export default function RSVPFormPage() {
       }
 
       setGuest(data as unknown as Guest)
+      // Pre-fill email if already in the database
+      if (data.email) setEmail(data.email)
       setLoading(false)
     }
 
@@ -83,6 +87,14 @@ export default function RSVPFormPage() {
   async function handleSubmit() {
     if (!guest) return
     setSubmitting(true)
+
+    // Save email to guests table
+    if (email) {
+      await supabase
+        .from('guests')
+        .update({ email: email.trim() })
+        .eq('id', guest.id)
+    }
 
     await supabase.from('responses').upsert({
       guest_id: guest.id,
@@ -113,10 +125,6 @@ export default function RSVPFormPage() {
       .from('guests')
       .update({ has_responded: true })
       .eq('id', guest.id)
-
-    console.log('customQuestions:', JSON.stringify(config.customQuestions))
-    console.log('customAnswers:', JSON.stringify(customAnswers))
-
 
     await saveCustomAnswers(guest.id, customAnswers)
     await applyTagsFromAnswers(guest.id, customAnswers, config.customQuestions ?? [])
@@ -154,13 +162,31 @@ export default function RSVPFormPage() {
       style={{ backgroundColor: 'var(--color-background)' }}
     >
       <div className="w-full max-w-md space-y-8">
-	<ThemeImages />
+        <ThemeImages />
         <h1
           className="text-3xl font-medium text-center"
           style={{ color: 'var(--color-primary)' }}
         >
           Hi, {guest?.first_name}
         </h1>
+
+        {/* Email */}
+        <div className="space-y-2">
+          <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+            {config.form.emailLabel}
+            {config.form.emailRequired && (
+              <span style={{ color: 'var(--color-accent)' }}> *</span>
+            )}
+          </p>
+          <input
+            type="email"
+            placeholder={config.form.emailPlaceholder}
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+            style={inputStyle}
+          />
+        </div>
 
         {/* Primary attendance */}
         <div className="space-y-3">
@@ -312,7 +338,11 @@ export default function RSVPFormPage() {
         {attending !== null && (
           <button
             onClick={handleSubmit}
-            disabled={submitting || (isSecondaryEligible && attending && attendingSecondary === null)}
+            disabled={
+              submitting ||
+              (config.form.emailRequired && !email) ||
+              (isSecondaryEligible && attending && attendingSecondary === null)
+            }
             className="w-full rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
             style={buttonActiveStyle}
           >

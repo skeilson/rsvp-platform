@@ -12,6 +12,7 @@ type Guest = {
   id: string
   first_name: string
   last_name: string
+  email: string | null
   guest_tags: { tags: { name: string } }[]
 }
 
@@ -59,6 +60,7 @@ export default function GroupRSVPPage() {
 
   const [guests, setGuests] = useState<Guest[]>([])
   const [responses, setResponses] = useState<Record<string, GuestResponse>>({})
+  const [emails, setEmails] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [customAnswers, setCustomAnswers] = useState<Record<string, Record<string, string>>>({})
@@ -71,6 +73,7 @@ export default function GroupRSVPPage() {
           id,
           first_name,
           last_name,
+          email,
           guest_tags (
             tags ( name )
           )
@@ -86,10 +89,13 @@ export default function GroupRSVPPage() {
       setGuests(data as unknown as Guest[])
 
       const initialResponses: Record<string, GuestResponse> = {}
+      const initialEmails: Record<string, string> = {}
       data.forEach(g => {
         initialResponses[g.id] = defaultResponse()
+        initialEmails[g.id] = g.email ?? ''
       })
       setResponses(initialResponses)
+      setEmails(initialEmails)
       setLoading(false)
     }
 
@@ -104,6 +110,10 @@ export default function GroupRSVPPage() {
         [field]: value,
       }
     }))
+  }
+
+  function updateEmail(guestId: string, value: string) {
+    setEmails(prev => ({ ...prev, [guestId]: value }))
   }
 
   function isSecondaryEligible(guest: Guest) {
@@ -123,6 +133,14 @@ export default function GroupRSVPPage() {
     for (const guest of guests) {
       const r = responses[guest.id]
       if (r.attending === null) continue
+
+      // Save email if provided
+      if (emails[guest.id]) {
+        await supabase
+          .from('guests')
+          .update({ email: emails[guest.id].trim() })
+          .eq('id', guest.id)
+      }
 
       await supabase.from('responses').upsert({
         guest_id: guest.id,
@@ -163,6 +181,8 @@ export default function GroupRSVPPage() {
   }
 
   const allAnswered = guests.every(g => responses[g.id]?.attending !== null)
+  const allEmailsProvided = !config.form.emailRequired ||
+    guests.every(g => emails[g.id]?.trim())
 
   function handleCustomAnswer(guestId: string, questionId: string, answer: string) {
     setCustomAnswers(prev => ({
@@ -191,7 +211,7 @@ export default function GroupRSVPPage() {
       style={{ backgroundColor: 'var(--color-background)' }}
     >
       <div className="w-full max-w-md space-y-10">
-	<ThemeImages />
+        <ThemeImages />
         <h1
           className="text-3xl font-medium text-center"
           style={{ color: 'var(--color-primary)' }}
@@ -216,6 +236,24 @@ export default function GroupRSVPPage() {
               >
                 {guest.first_name} {guest.last_name}
               </h2>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                  {config.form.emailLabel}
+                  {config.form.emailRequired && (
+                    <span style={{ color: 'var(--color-accent)' }}> *</span>
+                  )}
+                </p>
+                <input
+                  type="email"
+                  placeholder={config.form.emailPlaceholder}
+                  value={emails[guest.id] ?? ''}
+                  onChange={e => updateEmail(guest.id, e.target.value)}
+                  className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                  style={inputStyle}
+                />
+              </div>
 
               {/* Primary attendance */}
               <div className="space-y-3">
@@ -374,7 +412,7 @@ export default function GroupRSVPPage() {
         {allAnswered && (
           <button
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || !allEmailsProvided}
             className="w-full rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
             style={buttonActiveStyle}
           >

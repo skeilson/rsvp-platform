@@ -36,6 +36,9 @@
     "notePlaceholder": "Share a message, memory, or well wishes...",
     "declineNoteLabel": "Leave a note for the couple",
     "declineNotePlaceholder": "Share a message or well wishes...",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "name@email.com",
+    "emailRequired": true,
     "submitButton": "Submit RSVP"
   },
   "customQuestions": [

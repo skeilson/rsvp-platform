@@ -16,7 +16,7 @@ TO anon
 USING (true);
 
 -- Guests: allow public update for has_responded flag
-CREATE POLICY "anon can update has_responded"
+CREATE POLICY "anon can update guests"
 ON guests FOR UPDATE
 TO anon
 USING (true)
