@@ -16,6 +16,7 @@ type GuestWithResponse = {
     dietary: string | null
     song_request: string | null
     note: string | null
+    submitted_at: string | null
   }[]
   guest_tags: {
     tags: { name: string }
@@ -64,7 +65,6 @@ export default function AdminDashboardPage() {
           )
         `)
         .order('last_name', { ascending: true })
-	.order('submitted_at', { ascending: false, referencedTable: 'responses' })
 
       if (!error && data) {
         setGuests(data as unknown as GuestWithResponse[])
@@ -191,7 +191,8 @@ export default function AdminDashboardPage() {
         {/* Guest list */}
         <div className="space-y-3">
           {filtered.map(guest => {
-            const response = guest.responses?.[0]
+            const response = guest.responses?.sort((a, b) =>
+ 	      new Date(b.submitted_at ?? 0.getTime() - new Date(a.submitted_at ?? 0).getTime())[0]
             const tags = guest.guest_tags?.map(gt => gt.tags.name) ?? []
 
             return (
