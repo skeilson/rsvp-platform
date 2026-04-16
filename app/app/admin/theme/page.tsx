@@ -75,6 +75,22 @@ export default function ThemeEditorPage() {
     setTheme(prev => ({ ...prev, [field]: value }))
   }
 
+  async function handleUpload(file: File, field: 'logo_url' | 'hero_url') {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('folder', field === 'logo_url' ? 'logos' : 'heroes')
+
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData,
+    })
+
+    const result = await response.json()
+    if (result.url) {
+      update(field, result.url)
+    }
+  }
+
   if (loading) return (
     <main className="min-h-screen flex items-center justify-center">
       <p className="text-gray-400">Loading theme...</p>
@@ -164,19 +180,33 @@ export default function ThemeEditorPage() {
         <div className="border rounded-lg p-6 space-y-4">
           <h2 className="text-xl font-medium">Images</h2>
           <p className="text-sm text-gray-500">
-            Enter publicly accessible image URLs. These can be hosted on any image hosting service.
+            Upload an image or paste a public URL.
           </p>
 
-          <div className="space-y-4">
+         <div className="space-y-4">
             <div className="space-y-2">
-              <p className="text-sm font-medium">Logo or monogram URL</p>
-              <input
-                type="text"
-                placeholder="https://example.com/logo.png"
-                value={theme.logo_url}
-                onChange={e => update('logo_url', e.target.value)}
-                className="w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-              />
+      	    <p className="text-sm font-medium">Logo or monogram</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="https://example.com/logo.png"
+                  value={theme.logo_url}
+                  onChange={e => update('logo_url', e.target.value)}
+                  className="flex-1 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                />
+                <label className="px-4 py-3 border rounded-lg text-sm cursor-pointer hover:bg-gray-50">
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUpload(file, 'logo_url')
+                    }}
+                  />
+                </label>
+              </div>
               {theme.logo_url && (
                 <img
                   src={theme.logo_url}
@@ -188,14 +218,28 @@ export default function ThemeEditorPage() {
             </div>
 
             <div className="space-y-2">
-              <p className="text-sm font-medium">Hero image URL</p>
-              <input
-                type="text"
-                placeholder="https://example.com/hero.jpg"
-                value={theme.hero_url}
-                onChange={e => update('hero_url', e.target.value)}
-                className="w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-              />
+              <p className="text-sm font-medium">Hero image</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+               	  placeholder="https://example.com/hero.jpg"
+         	  value={theme.hero_url}
+         	  onChange={e => update('hero_url', e.target.value)}
+                  className="flex-1 border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                />
+                <label className="px-4 py-3 border rounded-lg text-sm cursor-pointer hover:bg-gray-50">
+                  Upload
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUpload(file, 'hero_url')
+                    }}
+                  />
+                </label>
+              </div>
               {theme.hero_url && (
                 <img
                   src={theme.hero_url}

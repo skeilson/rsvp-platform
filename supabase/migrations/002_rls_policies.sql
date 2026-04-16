@@ -110,3 +110,15 @@ CREATE POLICY "anon can read theme"
 ON theme FOR SELECT
 TO anon
 USING (true);
+
+-- Allow public read access to rsvp-assets storage bucket
+CREATE POLICY "public can read rsvp-assets"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'rsvp-assets');
+
+-- Allow service role to upload to rsvp-assets bucket
+CREATE POLICY "service role can upload to rsvp-assets"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'rsvp-assets');
