@@ -51,6 +51,10 @@ export async function POST(request: NextRequest) {
         )
       : guests
     
+    console.log('tags filter:', tags)
+    console.log('first guest tags:', JSON.stringify(guests[0]?.guest_tags))
+    console.log('filtered count:', filteredGuests.length)
+
     const results = await Promise.allSettled(
       filteredGuests.map(guest =>
         resend.emails.send({
