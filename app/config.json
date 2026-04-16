@@ -1,27 +1,27 @@
 {
- "access": {
-   "type": "none",
-   "password": "",
-   "token": ""
+  "access": {
+    "type": "none",
+    "password": "",
+    "token": ""
   },
   "event": {
-    "name": "Sarah & James",
-    "date": "October 18, 2026",
-    "location": "The Grand Ballroom, New York"
+    "name": "Your Event Name",
+    "date": "Month Day, Year",
+    "location": "Venue Name, City"
   },
   "rsvp": {
     "allowChanges": false
   },
   "primaryEvent": {
-    "name": "Wedding Reception",
+    "name": "Your Primary Event Name",
     "acceptLabel": "Joyfully accepts",
     "declineLabel": "Regretfully declines"
   },
   "secondaryEvent": {
-    "enabled": true,
-    "name": "Rehearsal Dinner",
-    "tag": "rehearsal-dinner",
-    "question": "Will you be joining us for the Rehearsal Dinner?"
+    "enabled": false,
+    "name": "Your Secondary Event Name",
+    "tag": "secondary-event-tag",
+    "question": "Will you be joining us for the [Secondary Event]?"
   },
   "form": {
     "lookupTitle": "RSVP",
@@ -32,9 +32,9 @@
     "dietaryPlaceholder": "None, vegetarian, gluten-free...",
     "songLabel": "Song request",
     "songPlaceholder": "A song that will get you on the dance floor",
-    "noteLabel": "Note to the couple",
-    "notePlaceholder": "Share a message, memory, or well wishes...",
-    "declineNoteLabel": "Leave a note for the couple",
+    "noteLabel": "Leave a note",
+    "notePlaceholder": "Share a message or well wishes...",
+    "declineNoteLabel": "Leave a note",
     "declineNotePlaceholder": "Share a message or well wishes...",
     "emailLabel": "Email address",
     "emailPlaceholder": "name@email.com",
@@ -54,8 +54,8 @@
         "Hotel 2 pickup"
       ],
       "tagOnAnswer": {
-	"Hotel 1 pickup": "hotel-1-shuttle",
-	"Hotel 2 pickup": "hotel-2-shuttle"
+        "Hotel 1 pickup": "hotel-1-shuttle",
+        "Hotel 2 pickup": "hotel-2-shuttle"
       }
     }
   ],
@@ -65,7 +65,7 @@
   },
   "confirmation": {
     "title": "You're all set",
-    "message": "Thank you for your RSVP. We look forward to celebrating with you."
+    "message": "Thank you for your RSVP."
   },
   "theme": {
     "primaryColor": "#111111",
