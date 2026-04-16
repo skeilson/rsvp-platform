@@ -52,7 +52,8 @@ export default function AdminDashboardPage() {
             attending,
             dietary,
             song_request,
-            note
+            note,
+	    submitted_at
           ),
           guest_tags (
             tags ( name )
@@ -63,6 +64,7 @@ export default function AdminDashboardPage() {
           )
         `)
         .order('last_name', { ascending: true })
+	.order('submitted_at', { ascending: false, referencedTable: 'responses' })
 
       if (!error && data) {
         setGuests(data as unknown as GuestWithResponse[])
