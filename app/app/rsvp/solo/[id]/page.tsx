@@ -113,6 +113,10 @@ export default function RSVPFormPage() {
       .update({ has_responded: true })
       .eq('id', guest.id)
 
+    console.log('customQuestions:', JSON.stringify(config.customQuestions))
+    console.log('customAnswers:', JSON.stringify(customAnswers))
+
+
     await saveCustomAnswers(guest.id, customAnswers)
     await applyTagsFromAnswers(guest.id, customAnswers, config.customQuestions ?? [])
 
