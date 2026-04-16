@@ -1,4 +1,4 @@
-'use client'
+ client'
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -87,15 +87,11 @@ export default function AdminDashboardPage() {
   async function handleDelete(responseId: string, guestId: string) {
     if (!confirm('Are you sure you want to delete this RSVP?')) return
 
-    if (responseId) {
-      await supabase.from('responses').delete().eq('id', responseId)
-    }
-    await supabase.from('event_responses').delete().eq('guest_id', guestId)
-    await supabase.from('custom_answers').delete().eq('guest_id', guestId)
-    await supabase
-      .from('guests')
-      .update({ has_responded: false })
-      .eq('id', guestId)
+    await fetch('/api/admin/delete-rsvp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ responseId, guestId }),
+     })
 
     void fetchGuests()
   }
