@@ -31,6 +31,7 @@ export default function AdminDashboardPage() {
   const [guests, setGuests] = useState<GuestWithResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'responded' | 'pending'>('all')
+  const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([])
   const [emailSubject, setEmailSubject] = useState('')
   const [emailMessage, setEmailMessage] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -54,7 +55,7 @@ export default function AdminDashboardPage() {
             dietary,
             song_request,
             note,
-	    submitted_at
+            submitted_at
           ),
           guest_tags (
             tags ( name )
@@ -91,7 +92,7 @@ export default function AdminDashboardPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ responseId, guestId }),
-     })
+    })
 
     void fetchGuests()
   }
@@ -117,9 +118,16 @@ export default function AdminDashboardPage() {
   }
 
   const filtered = guests.filter(g => {
-    if (filter === 'responded') return g.has_responded
-    if (filter === 'pending') return !g.has_responded
-    return true
+    const matchesStatus =
+      filter === 'responded' ? g.has_responded :
+      filter === 'pending' ? !g.has_responded :
+      true
+
+    const guestTagNames = g.guest_tags?.map(gt => gt.tags.name) ?? []
+    const matchesTags = selectedFilterTags.length === 0 ||
+      selectedFilterTags.every(tag => guestTagNames.includes(tag))
+
+    return matchesStatus && matchesTags
   })
 
   const stats = {
@@ -144,13 +152,15 @@ export default function AdminDashboardPage() {
           <h1 className="text-3xl font-medium">Admin dashboard</h1>
           <div className="flex items-center gap-4">
             
-              <a href="/admin/theme"
-              className="text-sm text-gray-400 underline underline-offset-4" >
+              href="/admin/theme"
+              className="text-sm text-gray-400 underline underline-offset-4"
+            >
               Theme editor
             </a>
             
-              <a href="/api/admin/logout"
-              className="text-sm text-gray-400 underline underline-offset-4" >
+              href="/api/admin/logout"
+              className="text-sm text-gray-400 underline underline-offset-4"
+            >
               Sign out
             </a>
           </div>
@@ -171,7 +181,7 @@ export default function AdminDashboardPage() {
           ))}
         </div>
 
-        {/* Filter */}
+        {/* Status filter */}
         <div className="flex gap-2">
           {(['all', 'responded', 'pending'] as const).map(f => (
             <button
@@ -183,6 +193,40 @@ export default function AdminDashboardPage() {
             </button>
           ))}
         </div>
+
+        {/* Tag filter */}
+        {availableTags.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-500">Filter by tag</p>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setSelectedFilterTags(prev =>
+                    prev.includes(tag)
+                      ? prev.filter(t => t !== tag)
+                      : [...prev, tag]
+                  )}
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedFilterTags.includes(tag)
+                      ? 'bg-gray-900 text-white'
+                      : 'border border-gray-300'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+              {selectedFilterTags.length > 0 && (
+                <button
+                  onClick={() => setSelectedFilterTags([])}
+                  className="px-3 py-1 rounded-full text-sm font-medium text-gray-400 underline underline-offset-2"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Guest list */}
         <div className="space-y-3">
