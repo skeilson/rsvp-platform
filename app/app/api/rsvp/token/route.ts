@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
+
+const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
+const MAX_ATTEMPTS = 5
+
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers)
+  const { allowed } = rateLimit(`rsvp-token:${ip}`, WINDOW_MS, MAX_ATTEMPTS)
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Please try again later.' },
+      { status: 429 }
+    )
+  }
 
   const token = request.nextUrl.searchParams.get('token')
   const redirectTo = request.nextUrl.searchParams.get('redirect') ?? '/rsvp'

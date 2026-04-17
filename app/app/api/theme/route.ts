@@ -25,6 +25,25 @@ export async function GET() {
   return NextResponse.json(data)
 }
 
+const VALID_HEX_COLOR = /^#[0-9a-fA-F]{6}$/
+const ALLOWED_FONTS = [
+  'Inter',
+  'Playfair Display',
+  'Lato',
+  'Montserrat',
+  'Raleway',
+  'Merriweather',
+]
+
+function isValidUrl(str: string): boolean {
+  try {
+    const url = new URL(str)
+    return url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export async function POST(request: NextRequest) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,6 +51,31 @@ export async function POST(request: NextRequest) {
   )
 
   const body = await request.json()
+
+  const errors: string[] = []
+
+  if (body.primary_color && !VALID_HEX_COLOR.test(body.primary_color)) {
+    errors.push('primary_color must be a valid hex color (e.g. #ff0000)')
+  }
+  if (body.background_color && !VALID_HEX_COLOR.test(body.background_color)) {
+    errors.push('background_color must be a valid hex color')
+  }
+  if (body.accent_color && !VALID_HEX_COLOR.test(body.accent_color)) {
+    errors.push('accent_color must be a valid hex color')
+  }
+  if (body.font_family && !ALLOWED_FONTS.includes(body.font_family)) {
+    errors.push(`font_family must be one of: ${ALLOWED_FONTS.join(', ')}`)
+  }
+  if (body.logo_url && !isValidUrl(body.logo_url)) {
+    errors.push('logo_url must be a valid HTTPS URL')
+  }
+  if (body.hero_url && !isValidUrl(body.hero_url)) {
+    errors.push('hero_url must be a valid HTTPS URL')
+  }
+
+  if (errors.length > 0) {
+    return NextResponse.json({ error: errors.join('; ') }, { status: 400 })
+  }
 
   const { data, error } = await supabase
     .from('theme')

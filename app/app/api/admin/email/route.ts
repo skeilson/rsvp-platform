@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function POST(request: NextRequest) {
   const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -18,6 +27,24 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     )
   }
+
+  if (typeof subject !== 'string' || typeof message !== 'string') {
+    return NextResponse.json(
+      { error: 'Subject and message must be strings' },
+      { status: 400 }
+    )
+  }
+
+  if (subject.length > 200 || message.length > 10_000) {
+    return NextResponse.json(
+      { error: 'Subject or message too long' },
+      { status: 400 }
+    )
+  }
+
+  // Strip CR/LF from subject to guard against header injection, even
+  // though the SDK should handle this.
+  const safeSubject = subject.replace(/[\r\n]+/g, ' ').trim()
 
   try {
     const { data: guests, error } = await supabaseAdmin
@@ -56,10 +83,10 @@ export async function POST(request: NextRequest) {
         resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL!,
           to: guest.email!,
-          subject,
+          subject: safeSubject,
           html: `
-            <p>Hi ${guest.first_name},</p>
-            <p>${message}</p>
+            <p>Hi ${escapeHtml(guest.first_name)},</p>
+            <p>${escapeHtml(message)}</p>
           `,
         })
       )
