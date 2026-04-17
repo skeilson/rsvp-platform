@@ -1,17 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 import { config } from '@/lib/config'
 import CustomQuestions from '@/components/customQuestions'
-import { saveCustomAnswers, applyTagsFromAnswers } from '@/lib/customAnswers'
 import ThemeImages from '@/components/themeImages'
 
 type Guest = {
   id: string
   first_name: string
   last_name: string
+  email: string | null
   guest_tags: { tags: { name: string } }[]
 }
 
@@ -36,7 +35,6 @@ const buttonInactiveStyle = {
 }
 
 export default function RSVPFormPage() {
-  const { id } = useParams()
   const router = useRouter()
 
   const [guest, setGuest] = useState<Guest | null>(null)
@@ -56,78 +54,47 @@ export default function RSVPFormPage() {
 
   useEffect(() => {
     async function fetchGuest() {
-      const { data, error } = await supabase
-        .from('guests')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          guest_tags (
-            tags ( name )
-          )
-        `)
-        .eq('id', id)
-        .single()
-
-      if (error || !data) {
+      const res = await fetch('/api/rsvp/guest')
+      if (!res.ok) {
         router.push('/rsvp')
         return
       }
 
-      setGuest(data as unknown as Guest)
-      // Pre-fill email if already in the database
+      const data = await res.json() as Guest
+      setGuest(data)
       if (data.email) setEmail(data.email)
       setLoading(false)
     }
 
     fetchGuest()
-  }, [id, router])
+  }, [router])
 
   async function handleSubmit() {
     if (!guest) return
     setSubmitting(true)
 
-    // Save email to guests table
-    if (email) {
-      await supabase
-        .from('guests')
-        .update({ email: email.trim() })
-        .eq('id', guest.id)
-    }
-
-    await supabase.from('responses').upsert({
-      guest_id: guest.id,
-      attending,
-      dietary: dietary || null,
-      song_request: songRequest || null,
-      note: note || null,
+    const res = await fetch('/api/rsvp/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        submissions: [{
+          guestId: guest.id,
+          attending,
+          email: email || null,
+          dietary: dietary || null,
+          songRequest: songRequest || null,
+          note: note || null,
+          attendingSecondary: isSecondaryEligible ? attendingSecondary : null,
+          meal: meal || null,
+          customAnswers,
+        }],
+      }),
     })
 
-    if (isSecondaryEligible && attendingSecondary !== null) {
-      const { data: event } = await supabase
-        .from('events')
-        .select('id')
-        .eq('is_primary', false)
-        .single()
-
-      if (event) {
-        await supabase.from('event_responses').upsert({
-          guest_id: guest.id,
-          event_id: event.id,
-          attending: attendingSecondary,
-          meal: attendingSecondary ? meal || null : null,
-        })
-      }
+    if (!res.ok) {
+      setSubmitting(false)
+      return
     }
-
-    await supabase
-      .from('guests')
-      .update({ has_responded: true })
-      .eq('id', guest.id)
-
-    await saveCustomAnswers(guest.id, customAnswers)
-    await applyTagsFromAnswers(guest.id, customAnswers, config.customQuestions ?? [])
 
     await fetch('/api/metrics/track', {
       method: 'POST',

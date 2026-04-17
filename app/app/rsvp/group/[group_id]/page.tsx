@@ -1,11 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 import { config } from '@/lib/config'
 import CustomQuestions from '@/components/customQuestions'
-import { saveCustomAnswers, applyTagsFromAnswers } from '@/lib/customAnswers'
 import ThemeImages from '@/components/themeImages'
 
 type Guest = {
@@ -55,7 +53,6 @@ const buttonInactiveStyle = {
 }
 
 export default function GroupRSVPPage() {
-  const { group_id } = useParams()
   const router = useRouter()
 
   const [guests, setGuests] = useState<Guest[]>([])
@@ -67,26 +64,14 @@ export default function GroupRSVPPage() {
 
   useEffect(() => {
     async function fetchGroup() {
-      const { data, error } = await supabase
-        .from('guests')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          guest_tags (
-            tags ( name )
-          )
-        `)
-        .eq('group_id', group_id)
-        .order('first_name', { ascending: true })
-
-      if (error || !data || data.length === 0) {
+      const res = await fetch('/api/rsvp/group')
+      if (!res.ok) {
         router.push('/rsvp')
         return
       }
 
-      setGuests(data as unknown as Guest[])
+      const data = await res.json() as Guest[]
+      setGuests(data)
 
       const initialResponses: Record<string, GuestResponse> = {}
       const initialEmails: Record<string, string> = {}
@@ -100,7 +85,7 @@ export default function GroupRSVPPage() {
     }
 
     fetchGroup()
-  }, [group_id, router])
+  }, [router])
 
   function updateResponse(guestId: string, field: keyof GuestResponse, value: unknown) {
     setResponses(prev => ({
@@ -124,55 +109,47 @@ export default function GroupRSVPPage() {
   async function handleSubmit() {
     setSubmitting(true)
 
-    const { data: event } = await supabase
-      .from('events')
-      .select('id')
-      .eq('is_primary', false)
-      .single()
-
-    for (const guest of guests) {
-      const r = responses[guest.id]
-      if (r.attending === null) continue
-
-      // Save email if provided
-      if (emails[guest.id]) {
-        await supabase
-          .from('guests')
-          .update({ email: emails[guest.id].trim() })
-          .eq('id', guest.id)
-      }
-
-      await supabase.from('responses').upsert({
-        guest_id: guest.id,
-        attending: r.attending,
-        dietary: r.dietary || null,
-        song_request: r.songRequest || null,
-        note: r.note || null,
+    const submissions = guests
+      .filter(g => responses[g.id]?.attending !== null)
+      .map(g => {
+        const r = responses[g.id]
+        const eligible = isSecondaryEligible(g)
+        return {
+          guestId: g.id,
+          attending: r.attending,
+          email: emails[g.id] || null,
+          dietary: r.dietary || null,
+          songRequest: r.songRequest || null,
+          note: r.note || null,
+          attendingSecondary: eligible ? r.attendingSecondary : null,
+          meal: r.meal || null,
+          customAnswers: customAnswers[g.id] ?? {},
+        }
       })
 
-      if (isSecondaryEligible(guest) && r.attendingSecondary !== null && event) {
-        await supabase.from('event_responses').upsert({
-          guest_id: guest.id,
-          event_id: event.id,
-          attending: r.attendingSecondary,
-          meal: r.attendingSecondary ? r.meal || null : null,
-        })
-      }
+    if (submissions.length === 0) {
+      setSubmitting(false)
+      return
+    }
 
-      await supabase
-        .from('guests')
-        .update({ has_responded: true })
-        .eq('id', guest.id)
+    const res = await fetch('/api/rsvp/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ submissions }),
+    })
 
-      await saveCustomAnswers(guest.id, customAnswers[guest.id] ?? {})
-      await applyTagsFromAnswers(guest.id, customAnswers[guest.id] ?? {}, config.customQuestions ?? [])
+    if (!res.ok) {
+      setSubmitting(false)
+      return
+    }
 
+    for (const s of submissions) {
       await fetch('/api/metrics/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'rsvp_submission',
-          labels: { attending: r.attending ? 'yes' : 'no' }
+          labels: { attending: s.attending ? 'yes' : 'no' }
         })
       })
     }

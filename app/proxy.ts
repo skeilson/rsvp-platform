@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { validateSessionToken } from '@/lib/session'
 
 const accessType = process.env.RSVP_ACCESS_TYPE ?? 'none'
 
@@ -8,7 +9,7 @@ export function proxy(request: NextRequest) {
   // Admin protection
   if (pathname.startsWith('/admin')) {
     const adminSession = request.cookies.get('admin_session')
-    if (!adminSession || adminSession.value !== 'authenticated') {
+    if (!adminSession || !validateSessionToken(adminSession.value, 'admin')) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
@@ -29,7 +30,7 @@ export function proxy(request: NextRequest) {
 
     // Check for valid session cookie
     const rsvpSession = request.cookies.get('rsvp_session')
-    if (!rsvpSession || rsvpSession.value !== 'authenticated') {
+    if (!rsvpSession || !validateSessionToken(rsvpSession.value, 'rsvp')) {
       if (accessType === 'password') {
         return NextResponse.redirect(new URL('/rsvp-login', request.url))
       }
