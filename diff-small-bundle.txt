@@ -1,0 +1,395 @@
+diff --git a/.env.example b/.env.example
+index 3cdddc3..db44782 100644
+--- a/.env.example
++++ b/.env.example
+@@ -24,6 +24,9 @@ SCRAPE_SCHEME=https
+ GRAFANA_PROMETHEUS_URL=https://prometheus-prod-xx-prod-us-west-0.grafana.net
+ GRAFANA_PROMETHEUS_USER=your-grafana-user-id
+ GRAFANA_PROMETHEUS_TOKEN=your-grafana-api-token
++# Shared secret Alloy / Prometheus must send as `Authorization: Bearer <token>`
++# when scraping /api/metrics. Unset means the endpoint returns 404.
++METRICS_SCRAPE_TOKEN=generate-a-random-string-here
+ 
+ # Docker Hub (GitHub Actions secrets — not needed locally)
+ DOCKERHUB_USERNAME=your-dockerhub-username
+diff --git a/alloy/config.alloy b/alloy/config.alloy
+index 1b69742..5860e24 100644
+--- a/alloy/config.alloy
++++ b/alloy/config.alloy
+@@ -6,6 +6,11 @@ prometheus.scrape "rsvp" {
+   metrics_path = "/api/metrics"
+   scrape_interval = "30s"
+   scheme = env("SCRAPE_SCHEME")
++
++  authorization {
++    type        = "Bearer"
++    credentials = env("METRICS_SCRAPE_TOKEN")
++  }
+ }
+ 
+ prometheus.remote_write "grafana" {
+diff --git a/app/Dockerfile b/app/Dockerfile
+index 1424424..ffb21d4 100644
+--- a/app/Dockerfile
++++ b/app/Dockerfile
+@@ -12,11 +12,11 @@ COPY . .
+ 
+ ARG NEXT_PUBLIC_SUPABASE_URL
+ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+-#ARG NEXT_PUBLIC_SITE_URL
++ARG NEXT_PUBLIC_SITE_URL
+ 
+ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+-#ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
++ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ 
+ RUN npm run build
+ 
+diff --git a/app/app/api/admin/email/route.ts b/app/app/api/admin/email/route.ts
+index 07d4c60..659d6d7 100644
+--- a/app/app/api/admin/email/route.ts
++++ b/app/app/api/admin/email/route.ts
+@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
+ import { Resend } from 'resend'
+ import { createClient } from '@supabase/supabase-js'
+ 
++function escapeHtml(str: string): string {
++  return str
++    .replace(/&/g, '&amp;')
++    .replace(/</g, '&lt;')
++    .replace(/>/g, '&gt;')
++    .replace(/"/g, '&quot;')
++    .replace(/'/g, '&#39;')
++}
++
+ export async function POST(request: NextRequest) {
+   const resend = new Resend(process.env.RESEND_API_KEY)
+ 
+@@ -19,6 +28,24 @@ export async function POST(request: NextRequest) {
+     )
+   }
+ 
++  if (typeof subject !== 'string' || typeof message !== 'string') {
++    return NextResponse.json(
++      { error: 'Subject and message must be strings' },
++      { status: 400 }
++    )
++  }
++
++  if (subject.length > 200 || message.length > 10_000) {
++    return NextResponse.json(
++      { error: 'Subject or message too long' },
++      { status: 400 }
++    )
++  }
++
++  // Strip CR/LF from subject to guard against header injection, even
++  // though the SDK should handle this.
++  const safeSubject = subject.replace(/[\r\n]+/g, ' ').trim()
++
+   try {
+     const { data: guests, error } = await supabaseAdmin
+       .from('guests')
+@@ -56,10 +83,10 @@ export async function POST(request: NextRequest) {
+         resend.emails.send({
+           from: process.env.RESEND_FROM_EMAIL!,
+           to: guest.email!,
+-          subject,
++          subject: safeSubject,
+           html: `
+-            <p>Hi ${guest.first_name},</p>
+-            <p>${message}</p>
++            <p>Hi ${escapeHtml(guest.first_name)},</p>
++            <p>${escapeHtml(message)}</p>
+           `,
+         })
+       )
+diff --git a/app/app/api/admin/login/route.ts b/app/app/api/admin/login/route.ts
+index 5433046..9aedc55 100644
+--- a/app/app/api/admin/login/route.ts
++++ b/app/app/api/admin/login/route.ts
+@@ -1,6 +1,20 @@
+ import { NextRequest, NextResponse } from 'next/server'
++import { rateLimit, getClientIp } from '@/lib/rate-limit'
++
++const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
++const MAX_ATTEMPTS = 5
+ 
+ export async function POST(request: NextRequest) {
++  const ip = getClientIp(request.headers)
++  const { allowed } = rateLimit(`admin-login:${ip}`, WINDOW_MS, MAX_ATTEMPTS)
++
++  if (!allowed) {
++    return NextResponse.json(
++      { error: 'Too many login attempts. Please try again later.' },
++      { status: 429 }
++    )
++  }
++
+   const { password } = await request.json()
+ 
+   if (password !== process.env.ADMIN_PASSWORD) {
+diff --git a/app/app/api/metrics/route.ts b/app/app/api/metrics/route.ts
+index fecda1d..51719dc 100644
+--- a/app/app/api/metrics/route.ts
++++ b/app/app/api/metrics/route.ts
+@@ -1,7 +1,35 @@
+-import { NextResponse } from 'next/server'
++import { NextRequest, NextResponse } from 'next/server'
++import { timingSafeEqual } from 'crypto'
+ import { register } from '@/lib/metrics'
+ 
+-export async function GET() {
++// Bearer-token auth so a Prometheus scraper can pull metrics without a
++// cookie. If METRICS_SCRAPE_TOKEN is unset, the endpoint returns 404 —
++// there's nothing sensitive leaked by its existence, but refusing to
++// serve anything is simpler than a partial gate.
++function authorized(request: NextRequest): boolean {
++  const expected = process.env.METRICS_SCRAPE_TOKEN
++  if (!expected) return false
++
++  const header = request.headers.get('authorization') ?? ''
++  const match = /^Bearer (.+)$/i.exec(header)
++  if (!match) return false
++
++  const provided = match[1]
++  const a = Buffer.from(provided)
++  const b = Buffer.from(expected)
++  if (a.length !== b.length) return false
++  try {
++    return timingSafeEqual(a, b)
++  } catch {
++    return false
++  }
++}
++
++export async function GET(request: NextRequest) {
++  if (!authorized(request)) {
++    return new NextResponse('Not found', { status: 404 })
++  }
++
+   const metrics = await register.metrics()
+   return new NextResponse(metrics, {
+     headers: {
+diff --git a/app/app/api/metrics/track/route.ts b/app/app/api/metrics/track/route.ts
+index 13df271..f6d69c3 100644
+--- a/app/app/api/metrics/track/route.ts
++++ b/app/app/api/metrics/track/route.ts
+@@ -1,15 +1,40 @@
+ import { NextRequest, NextResponse } from 'next/server'
+ import { rsvpSubmissionCounter, guestLookupCounter } from '@/lib/metrics'
+ 
++// Per-event label schema with a closed set of allowed values. Anything
++// outside the set is dropped so attackers can't inflate Prometheus series
++// cardinality by posting arbitrary label values.
++const VALID_EVENTS: Record<string, Record<string, Set<string>>> = {
++  rsvp_submission: {
++    attending: new Set(['yes', 'no']),
++  },
++  guest_lookup: {
++    result: new Set(['found', 'not_found']),
++  },
++}
++
+ export async function POST(request: NextRequest) {
+   const { event, labels } = await request.json()
+ 
++  if (!event || !(event in VALID_EVENTS)) {
++    return NextResponse.json({ error: 'Unknown event' }, { status: 400 })
++  }
++
++  const schema = VALID_EVENTS[event]
++  const filtered: Record<string, string> = {}
++  for (const [key, allowed] of Object.entries(schema)) {
++    const value = labels?.[key]
++    if (typeof value === 'string' && allowed.has(value)) {
++      filtered[key] = value
++    }
++  }
++
+   if (event === 'rsvp_submission') {
+-    rsvpSubmissionCounter.inc(labels)
++    rsvpSubmissionCounter.inc(filtered)
+   }
+ 
+   if (event === 'guest_lookup') {
+-    guestLookupCounter.inc(labels)
++    guestLookupCounter.inc(filtered)
+   }
+ 
+   return NextResponse.json({ success: true })
+diff --git a/app/app/api/rsvp/login/route.ts b/app/app/api/rsvp/login/route.ts
+index 0c5273f..7ee4985 100644
+--- a/app/app/api/rsvp/login/route.ts
++++ b/app/app/api/rsvp/login/route.ts
+@@ -1,6 +1,20 @@
+ import { NextRequest, NextResponse } from 'next/server'
++import { rateLimit, getClientIp } from '@/lib/rate-limit'
++
++const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
++const MAX_ATTEMPTS = 5
+ 
+ export async function POST(request: NextRequest) {
++  const ip = getClientIp(request.headers)
++  const { allowed } = rateLimit(`rsvp-login:${ip}`, WINDOW_MS, MAX_ATTEMPTS)
++
++  if (!allowed) {
++    return NextResponse.json(
++      { error: 'Too many login attempts. Please try again later.' },
++      { status: 429 }
++    )
++  }
++
+   const { password } = await request.json()
+ 
+   if (password !== process.env.RSVP_ACCESS_PASSWORD) {
+diff --git a/app/app/api/rsvp/token/route.ts b/app/app/api/rsvp/token/route.ts
+index 327a342..2deb576 100644
+--- a/app/app/api/rsvp/token/route.ts
++++ b/app/app/api/rsvp/token/route.ts
+@@ -1,5 +1,19 @@
+ import { NextRequest, NextResponse } from 'next/server'
++import { rateLimit, getClientIp } from '@/lib/rate-limit'
++
++const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
++const MAX_ATTEMPTS = 5
++
+ export async function GET(request: NextRequest) {
++  const ip = getClientIp(request.headers)
++  const { allowed } = rateLimit(`rsvp-token:${ip}`, WINDOW_MS, MAX_ATTEMPTS)
++
++  if (!allowed) {
++    return NextResponse.json(
++      { error: 'Too many attempts. Please try again later.' },
++      { status: 429 }
++    )
++  }
+ 
+   const token = request.nextUrl.searchParams.get('token')
+   const redirectTo = request.nextUrl.searchParams.get('redirect') ?? '/rsvp'
+diff --git a/app/app/api/theme/route.ts b/app/app/api/theme/route.ts
+index a016acd..7ed8cf3 100644
+--- a/app/app/api/theme/route.ts
++++ b/app/app/api/theme/route.ts
+@@ -25,6 +25,25 @@ export async function GET() {
+   return NextResponse.json(data)
+ }
+ 
++const VALID_HEX_COLOR = /^#[0-9a-fA-F]{6}$/
++const ALLOWED_FONTS = [
++  'Inter',
++  'Playfair Display',
++  'Lato',
++  'Montserrat',
++  'Raleway',
++  'Merriweather',
++]
++
++function isValidUrl(str: string): boolean {
++  try {
++    const url = new URL(str)
++    return url.protocol === 'https:'
++  } catch {
++    return false
++  }
++}
++
+ export async function POST(request: NextRequest) {
+   const supabase = createClient(
+     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+@@ -33,6 +52,31 @@ export async function POST(request: NextRequest) {
+ 
+   const body = await request.json()
+ 
++  const errors: string[] = []
++
++  if (body.primary_color && !VALID_HEX_COLOR.test(body.primary_color)) {
++    errors.push('primary_color must be a valid hex color (e.g. #ff0000)')
++  }
++  if (body.background_color && !VALID_HEX_COLOR.test(body.background_color)) {
++    errors.push('background_color must be a valid hex color')
++  }
++  if (body.accent_color && !VALID_HEX_COLOR.test(body.accent_color)) {
++    errors.push('accent_color must be a valid hex color')
++  }
++  if (body.font_family && !ALLOWED_FONTS.includes(body.font_family)) {
++    errors.push(`font_family must be one of: ${ALLOWED_FONTS.join(', ')}`)
++  }
++  if (body.logo_url && !isValidUrl(body.logo_url)) {
++    errors.push('logo_url must be a valid HTTPS URL')
++  }
++  if (body.hero_url && !isValidUrl(body.hero_url)) {
++    errors.push('hero_url must be a valid HTTPS URL')
++  }
++
++  if (errors.length > 0) {
++    return NextResponse.json({ error: errors.join('; ') }, { status: 400 })
++  }
++
+   const { data, error } = await supabase
+     .from('theme')
+     .update({
+diff --git a/app/lib/rate-limit.ts b/app/lib/rate-limit.ts
+new file mode 100644
+index 0000000..99bccf3
+--- /dev/null
++++ b/app/lib/rate-limit.ts
+@@ -0,0 +1,57 @@
++// Deploy invariants this module depends on:
++//   1. Exactly one trusted proxy sits in front of Next. If zero proxies,
++//      X-Forwarded-For is client-controlled and getClientIp returns a
++//      forgeable value. If two+ proxies and the last one is internal, all
++//      traffic shares one bucket and legit users get locked out.
++//   2. The app runs as a single long-lived process (Railway container).
++//      Scaling beyond one replica makes each replica its own counter;
++//      swap this for Redis/Upstash before horizontally scaling.
++const attempts = new Map<string, number[]>()
++const MAX_TRACKED_KEYS = 10_000
++
++function prune(windowStart: number) {
++  for (const [key, timestamps] of attempts) {
++    const kept = timestamps.filter(t => t > windowStart)
++    if (kept.length === 0) {
++      attempts.delete(key)
++    } else if (kept.length !== timestamps.length) {
++      attempts.set(key, kept)
++    }
++  }
++}
++
++export function rateLimit(
++  key: string,
++  windowMs: number,
++  maxAttempts: number
++): { allowed: boolean; remaining: number } {
++  const now = Date.now()
++  const windowStart = now - windowMs
++
++  if (attempts.size > MAX_TRACKED_KEYS) {
++    prune(windowStart)
++  }
++
++  const timestamps = (attempts.get(key) ?? []).filter(t => t > windowStart)
++
++  if (timestamps.length >= maxAttempts) {
++    attempts.set(key, timestamps)
++    return { allowed: false, remaining: 0 }
++  }
++
++  timestamps.push(now)
++  attempts.set(key, timestamps)
++  return { allowed: true, remaining: maxAttempts - timestamps.length }
++}
++
++// The edge proxy appends the real client IP to the right of any
++// client-supplied X-Forwarded-For chain. Taking the last entry makes
++// the value unforgeable by the client while still honoring the proxy.
++export function getClientIp(headers: Headers): string {
++  const xff = headers.get('x-forwarded-for')
++  if (xff) {
++    const parts = xff.split(',').map(p => p.trim()).filter(Boolean)
++    if (parts.length > 0) return parts[parts.length - 1]
++  }
++  return headers.get('x-real-ip')?.trim() || 'unknown'
++}

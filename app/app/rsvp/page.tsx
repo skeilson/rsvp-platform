@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
 import ThemeImages from '@/components/themeImages'
 
@@ -17,16 +16,15 @@ export default function RSVPLookupPage() {
     setLoading(true)
     setError('')
 
-    const { data, error } = await supabase
-      .from('guests')
-      .select('id, group_id, has_responded')
-      .ilike('first_name', firstName.trim())
-      .ilike('last_name', lastName.trim())
-      .single()
+    const res = await fetch('/api/rsvp/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName, lastName }),
+    })
 
     setLoading(false)
 
-    if (error || !data) {
+    if (!res.ok) {
       setError(config.form.notFoundMessage)
       await fetch('/api/metrics/track', {
         method: 'POST',
@@ -39,6 +37,8 @@ export default function RSVPLookupPage() {
       return
     }
 
+    const result = await res.json() as { redirectTo: string }
+
     await fetch('/api/metrics/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -48,16 +48,7 @@ export default function RSVPLookupPage() {
       })
     })
 
-    if (data.has_responded && !config.rsvp.allowChanges) {
-      router.push('/rsvp/responded')
-      return
-    }
-
-    if (data.group_id) {
-      router.push(`/rsvp/group/${data.group_id}`)
-    } else {
-      router.push(`/rsvp/solo/${data.id}`)
-    }
+    router.push(result.redirectTo)
   }
 
   return (

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import { config } from '@/lib/config'
 
 type GuestWithResponse = {
@@ -37,39 +36,16 @@ export default function AdminDashboardPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [editingTagsFor, setEditingTagsFor] = useState<string | null>(null)
   const [availableTags, setAvailableTags] = useState<string[]>([])
+  const [tagIdsByName, setTagIdsByName] = useState<Record<string, string>>({})
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ sent: number, failed: number, total: number } | null>(null)
 
   async function fetchGuests() {
     try {
-      const { data, error } = await supabase
-        .from('guests')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          has_responded,
-          responses (
-            id,
-            attending,
-            dietary,
-            song_request,
-            note,
-            submitted_at
-          ),
-          guest_tags (
-            tags ( name )
-          ),
-          custom_answers (
-            question_id,
-            answer
-          )
-        `)
-        .order('last_name', { ascending: true })
-
-      if (!error && data) {
-        setGuests(data as unknown as GuestWithResponse[])
+      const res = await fetch('/api/admin/guests')
+      if (res.ok) {
+        const data = await res.json()
+        setGuests(data as GuestWithResponse[])
       }
     } finally {
       setLoading(false)
@@ -77,8 +53,11 @@ export default function AdminDashboardPage() {
   }
 
   async function fetchTags() {
-    const { data } = await supabase.from('tags').select('name')
-    if (data) setAvailableTags(data.map(t => t.name))
+    const res = await fetch('/api/admin/tags')
+    if (!res.ok) return
+    const data = (await res.json()) as { id: string; name: string }[]
+    setAvailableTags(data.map(t => t.name))
+    setTagIdsByName(Object.fromEntries(data.map(t => [t.name, t.id])))
   }
 
   useEffect(() => {
@@ -99,36 +78,26 @@ export default function AdminDashboardPage() {
   }
 
   async function handleAddTag(guestId: string, tagName: string) {
-    const { data: tag } = await supabase
-      .from('tags')
-      .select('id')
-      .eq('name', tagName)
-      .single()
-
-    if (!tag) return
+    const tagId = tagIdsByName[tagName]
+    if (!tagId) return
 
     await fetch('/api/admin/guest-tags', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ guestId, tagId: tag.id }),
+      body: JSON.stringify({ guestId, tagId }),
     })
 
     void fetchGuests()
   }
 
   async function handleRemoveTag(guestId: string, tagName: string) {
-    const { data: tag } = await supabase
-      .from('tags')
-      .select('id')
-      .eq('name', tagName)
-      .single()
-
-    if (!tag) return
+    const tagId = tagIdsByName[tagName]
+    if (!tagId) return
 
     await fetch('/api/admin/guest-tags', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ guestId, tagId: tag.id }),
+      body: JSON.stringify({ guestId, tagId }),
     })
 
     void fetchGuests()
