@@ -228,3 +228,90 @@ export default function RSVPFormPage() {
             </div>
 
             <div className="space-y-2">
+              <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                {config.form.songLabel}
+              </p>
+              <input
+                type="text"
+                placeholder={config.form.songPlaceholder}
+                value={songRequest}
+                onChange={e => setSongRequest(e.target.value)}
+                className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                style={inputStyle}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                {config.form.noteLabel}
+              </p>
+              <textarea
+                placeholder={config.form.notePlaceholder}
+                value={note}
+                onChange={e => setNote(e.target.value)}
+                rows={4}
+                className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                style={inputStyle}
+              />
+            </div>
+
+            <CustomQuestions
+              questions={config.customQuestions ?? []}
+              answers={customAnswers}
+              onChange={handleCustomAnswer}
+              showWhen="attending"
+            />
+
+            {/* Conditional events */}
+            <ConditionalEvents
+              events={config.events ?? []}
+              guestTags={guestTags}
+              responses={eventResponses}
+              onChange={handleEventChange}
+              onAnswerChange={handleEventAnswerChange}
+            />
+          </div>
+        )}
+
+        {/* Attending NO path */}
+        {attending === false && (
+          <div className="space-y-2">
+            <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+              {config.form.declineNoteLabel}
+            </p>
+            <textarea
+              placeholder={config.form.declineNotePlaceholder}
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              rows={4}
+              className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+              style={inputStyle}
+            />
+          </div>
+        )}
+
+        <CustomQuestions
+          questions={config.customQuestions ?? []}
+          answers={customAnswers}
+          onChange={handleCustomAnswer}
+          showWhen="always"
+        />
+
+        {attending !== null && (
+          <button
+            onClick={handleSubmit}
+            disabled={
+              submitting ||
+              (config.form.emailRequired && !email) ||
+              (attending === true && eligibleEvents.length > 0 && !allEventsAnswered)
+            }
+            className="w-full rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
+            style={buttonActiveStyle}
+          >
+            {submitting ? 'Submitting...' : config.form.submitButton}
+          </button>
+        )}
+      </div>
+    </main>
+  )
+}
