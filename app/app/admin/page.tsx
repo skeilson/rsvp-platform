@@ -497,4 +497,11 @@ export default function AdminDashboardPage() {
             disabled={sending || !emailSubject || !emailMessage}
             className="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
           >
-            {sending ? 'Se
+            {sending ? 'Sending...' : 'Send email blast'}
+          </button>
+        </div>
+
+      </div>
+    </main>
+ )
+}
