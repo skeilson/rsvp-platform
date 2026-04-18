@@ -17,12 +17,6 @@
     "acceptLabel": "Joyfully accepts",
     "declineLabel": "Regretfully declines"
   },
-  "secondaryEvent": {
-    "enabled": false,
-    "name": "Your Secondary Event Name",
-    "tag": "secondary-event-tag",
-    "question": "Will you be joining us for the [Secondary Event]?"
-  },
   "form": {
     "lookupTitle": "RSVP",
     "lookupSubtitle": "Enter your name as it appears on your invitation",
@@ -59,10 +53,15 @@
       }
     }
   ],
-  "secondaryForm": {
-    "mealLabel": "Meal preference",
-    "mealPlaceholder": "Chicken, fish, vegetarian..."
-  },
+  "events": [
+    {
+      "id": "secondary-event",
+      "name": "Secondary Event",
+      "tag": "secondary-event",
+      "question": "Will you be joining us for the Secondary Event?",
+      "fields": []
+    }
+  ],
   "confirmation": {
     "title": "You're all set",
     "message": "Thank you for your RSVP."

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { config } from '@/lib/config'
 import CustomQuestions from '@/components/customQuestions'
+import ConditionalEvents from '@/components/ConditionalEvents'
 import ThemeImages from '@/components/themeImages'
 
 type Guest = {
@@ -12,6 +13,11 @@ type Guest = {
   last_name: string
   email: string | null
   guest_tags: { tags: { name: string } }[]
+}
+
+type EventResponse = {
+  attending: boolean | null
+  answers: Record<string, string>
 }
 
 const inputStyle = {
@@ -43,14 +49,16 @@ export default function RSVPFormPage() {
   const [dietary, setDietary] = useState('')
   const [songRequest, setSongRequest] = useState('')
   const [note, setNote] = useState('')
-  const [attendingSecondary, setAttendingSecondary] = useState<boolean | null>(null)
-  const [meal, setMeal] = useState('')
+  const [eventResponses, setEventResponses] = useState<Record<string, EventResponse>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({})
 
-  const isSecondaryEligible = config.secondaryEvent.enabled &&
-    guest?.guest_tags?.some(t => t.tags.name === config.secondaryEvent.tag)
+  const guestTags = guest?.guest_tags?.map(t => t.tags.name) ?? []
+  const eligibleEvents = (config.events ?? []).filter(e => guestTags.includes(e.tag))
+  const allEventsAnswered = eligibleEvents.every(
+    e => eventResponses[e.id]?.attending !== null && eventResponses[e.id]?.attending !== undefined
+  )
 
   useEffect(() => {
     async function fetchGuest() {
@@ -69,6 +77,31 @@ export default function RSVPFormPage() {
     fetchGuest()
   }, [router])
 
+  function handleEventChange(eventId: string, field: 'attending', value: boolean) {
+    setEventResponses(prev => ({
+      ...prev,
+      [eventId]: {
+        ...prev[eventId],
+        attending: value,
+        answers: prev[eventId]?.answers ?? {},
+      }
+    }))
+  }
+
+  function handleEventAnswerChange(eventId: string, fieldId: string, value: string) {
+    setEventResponses(prev => ({
+      ...prev,
+      [eventId]: {
+        ...prev[eventId],
+        attending: prev[eventId]?.attending ?? null,
+        answers: {
+          ...prev[eventId]?.answers,
+          [fieldId]: value,
+        }
+      }
+    }))
+  }
+
   async function handleSubmit() {
     if (!guest) return
     setSubmitting(true)
@@ -84,8 +117,7 @@ export default function RSVPFormPage() {
           dietary: dietary || null,
           songRequest: songRequest || null,
           note: note || null,
-          attendingSecondary: isSecondaryEligible ? attendingSecondary : null,
-          meal: meal || null,
+          eventResponses,
           customAnswers,
         }],
       }),
@@ -196,127 +228,3 @@ export default function RSVPFormPage() {
             </div>
 
             <div className="space-y-2">
-              <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-                {config.form.songLabel}
-              </p>
-              <input
-                type="text"
-                placeholder={config.form.songPlaceholder}
-                value={songRequest}
-                onChange={e => setSongRequest(e.target.value)}
-                className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
-                style={inputStyle}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-                {config.form.noteLabel}
-              </p>
-              <textarea
-                placeholder={config.form.notePlaceholder}
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                rows={4}
-                className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
-                style={inputStyle}
-              />
-            </div>
-
-            <CustomQuestions
-              questions={config.customQuestions ?? []}
-              answers={customAnswers}
-              onChange={handleCustomAnswer}
-              showWhen="attending"
-            />
-
-            {/* Secondary event */}
-            {isSecondaryEligible && (
-              <div
-                className="space-y-3 pt-6"
-                style={{ borderTop: '1px solid var(--color-primary)' }}
-              >
-                <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-                  {config.secondaryEvent.question}
-                </p>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setAttendingSecondary(true)}
-                    className="flex-1 py-3 rounded-lg border font-medium"
-                    style={attendingSecondary === true ? buttonActiveStyle : buttonInactiveStyle}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    onClick={() => setAttendingSecondary(false)}
-                    className="flex-1 py-3 rounded-lg border font-medium"
-                    style={attendingSecondary === false ? buttonActiveStyle : buttonInactiveStyle}
-                  >
-                    No
-                  </button>
-                </div>
-
-                {attendingSecondary === true && (
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-                        {config.secondaryForm.mealLabel}
-                      </p>
-                      <input
-                        type="text"
-                        placeholder={config.secondaryForm.mealPlaceholder}
-                        value={meal}
-                        onChange={e => setMeal(e.target.value)}
-                        className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
-                        style={inputStyle}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Attending NO path */}
-        {attending === false && (
-          <div className="space-y-2">
-            <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-              {config.form.declineNoteLabel}
-            </p>
-            <textarea
-              placeholder={config.form.declineNotePlaceholder}
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              rows={4}
-              className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
-              style={inputStyle}
-            />
-          </div>
-        )}
-
-        <CustomQuestions
-          questions={config.customQuestions ?? []}
-          answers={customAnswers}
-          onChange={handleCustomAnswer}
-          showWhen="always"
-        />
-
-        {attending !== null && (
-          <button
-            onClick={handleSubmit}
-            disabled={
-              submitting ||
-              (config.form.emailRequired && !email) ||
-              (isSecondaryEligible && attending && attendingSecondary === null)
-            }
-            className="w-full rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
-            style={buttonActiveStyle}
-          >
-            {submitting ? 'Submitting...' : config.form.submitButton}
-          </button>
-        )}
-      </div>
-    </main>
-  )
-}

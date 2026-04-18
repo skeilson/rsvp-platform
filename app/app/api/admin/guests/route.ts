@@ -33,6 +33,12 @@ export async function GET(request: NextRequest) {
       custom_answers (
         question_id,
         answer
+      ),
+      event_responses (
+        id,
+        event_id,
+        attending,
+        answers
       )
     `)
     .order('last_name', { ascending: true })

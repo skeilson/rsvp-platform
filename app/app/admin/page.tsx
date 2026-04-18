@@ -3,6 +3,13 @@
 import { useState, useEffect } from 'react'
 import { config } from '@/lib/config'
 
+type EventResponse = {
+  id: string
+  event_id: string
+  attending: boolean
+  answers: Record<string, string> | null
+}
+
 type GuestWithResponse = {
   id: string
   first_name: string
@@ -24,6 +31,7 @@ type GuestWithResponse = {
     question_id: string
     answer: string
   }[]
+  event_responses: EventResponse[]
 }
 
 export default function AdminDashboardPage() {
@@ -158,13 +166,13 @@ export default function AdminDashboardPage() {
           <h1 className="text-3xl font-medium">Admin dashboard</h1>
           <div className="flex items-center gap-4">
             
-              <a href="/admin/theme"
+              href="/admin/theme"
               className="text-sm text-gray-400 underline underline-offset-4"
             >
               Theme editor
             </a>
             
-              <a href="/api/admin/logout"
+              href="/api/admin/logout"
               className="text-sm text-gray-400 underline underline-offset-4"
             >
               Sign out
@@ -346,6 +354,40 @@ export default function AdminDashboardPage() {
                     {response.note && (
                       <p><span className="font-medium text-gray-700">Note:</span> {response.note}</p>
                     )}
+
+                    {/* Event responses */}
+                    {guest.event_responses?.length > 0 && (
+                      <div className="space-y-1 pt-1">
+                        {guest.event_responses.map(er => {
+                          const event = config.events?.find(e => e.id === er.event_id)
+                          return (
+                            <div key={er.event_id}>
+                              <p>
+                                <span className="font-medium text-gray-700">
+                                  {event?.name ?? er.event_id}:
+                                </span>{' '}
+                                <span className={er.attending ? 'text-green-600' : 'text-red-500'}>
+                                  {er.attending ? 'Attending' : 'Not attending'}
+                                </span>
+                              </p>
+                              {er.attending && er.answers && Object.entries(er.answers).map(([fieldId, answer]) => {
+                                const field = event?.fields?.find(f => f.id === fieldId)
+                                return (
+                                  <p key={fieldId} className="ml-3">
+                                    <span className="font-medium text-gray-700">
+                                      {field?.label ?? fieldId}:
+                                    </span>{' '}
+                                    {answer}
+                                  </p>
+                                )
+                              })}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Custom answers */}
                     {guest.custom_answers?.length > 0 && (
                       <div className="space-y-1">
                         {guest.custom_answers.map(ca => {
@@ -361,6 +403,7 @@ export default function AdminDashboardPage() {
                         })}
                       </div>
                     )}
+
                     <button
                       onClick={() => handleDelete(response.id, guest.id)}
                       className="text-red-500 text-xs underline underline-offset-2 pt-1"
@@ -454,11 +497,4 @@ export default function AdminDashboardPage() {
             disabled={sending || !emailSubject || !emailMessage}
             className="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
           >
-            {sending ? 'Sending...' : 'Send email blast'}
-          </button>
-        </div>
-
-      </div>
-    </main>
-  )
-}
+            {sending ? 'Se

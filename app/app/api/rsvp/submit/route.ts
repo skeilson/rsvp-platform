@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { readGuestClaimsFromRequest } from '@/lib/guest-session'
-import { config, CustomQuestion } from '@/lib/config'
+import { config, CustomQuestion, ConditionalEvent } from '@/lib/config'
+
+type EventResponse = {
+  attending: boolean
+  answers?: Record<string, string>
+}
 
 type GuestSubmission = {
   guestId: string
@@ -10,8 +15,7 @@ type GuestSubmission = {
   dietary?: string | null
   songRequest?: string | null
   note?: string | null
-  attendingSecondary?: boolean | null
-  meal?: string | null
+  eventResponses?: Record<string, EventResponse>
   customAnswers?: Record<string, string>
 }
 
@@ -24,6 +28,28 @@ function nullableTrimmed(v: unknown, max: number): string | null {
   const t = v.trim()
   if (!t) return null
   return t.slice(0, max)
+}
+
+function parseEventResponses(raw: unknown): Record<string, EventResponse> {
+  const result: Record<string, EventResponse> = {}
+  if (typeof raw !== 'object' || raw === null) return result
+
+  for (const [eventId, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof value !== 'object' || value === null) continue
+    const v = value as Record<string, unknown>
+    if (typeof v.attending !== 'boolean') continue
+
+    const answers: Record<string, string> = {}
+    if (typeof v.answers === 'object' && v.answers !== null) {
+      for (const [k, a] of Object.entries(v.answers as Record<string, unknown>)) {
+        if (isString(k) && isString(a) && a.length <= 2000) answers[k] = a
+      }
+    }
+
+    result[eventId] = { attending: v.attending, answers }
+  }
+
+  return result
 }
 
 function parseSubmission(raw: unknown): GuestSubmission | null {
@@ -46,9 +72,7 @@ function parseSubmission(raw: unknown): GuestSubmission | null {
     dietary: nullableTrimmed(r.dietary, 500),
     songRequest: nullableTrimmed(r.songRequest, 500),
     note: nullableTrimmed(r.note, 2000),
-    attendingSecondary:
-      typeof r.attendingSecondary === 'boolean' ? r.attendingSecondary : null,
-    meal: nullableTrimmed(r.meal, 500),
+    eventResponses: parseEventResponses(r.eventResponses),
     customAnswers,
   }
 }
@@ -93,7 +117,6 @@ async function applyTagsFromAnswers(
 
     let tagId = existingTag?.id
     if (!tagId) {
-      // Service role can insert tags; the old anon-only flow silently no-op'd here.
       const { data: newTag } = await supabase
         .from('tags')
         .insert({ name: tagName })
@@ -126,10 +149,29 @@ async function applyTagsFromAnswers(
   }
 }
 
+async function saveEventResponses(
+  supabase: SupabaseClient,
+  guestId: string,
+  eventResponses: Record<string, EventResponse>,
+  eligibleEvents: ConditionalEvent[]
+) {
+  for (const event of eligibleEvents) {
+    const response = eventResponses[event.id]
+    if (!response || response.attending === undefined) continue
+
+    await supabase.from('event_responses').upsert({
+      guest_id: guestId,
+      event_id: event.id,
+      attending: response.attending,
+      answers: response.attending ? (response.answers ?? {}) : {},
+    }, { onConflict: 'guest_id,event_id' })
+  }
+}
+
 async function writeSubmission(
   supabase: SupabaseClient,
   s: GuestSubmission,
-  secondaryEventId: string | null
+  guestTags: string[]
 ) {
   if (s.email) {
     await supabase.from('guests').update({ email: s.email }).eq('id', s.guestId)
@@ -143,18 +185,9 @@ async function writeSubmission(
     note: s.note,
   })
 
-  if (
-    secondaryEventId &&
-    s.attendingSecondary !== null &&
-    s.attendingSecondary !== undefined
-  ) {
-    await supabase.from('event_responses').upsert({
-      guest_id: s.guestId,
-      event_id: secondaryEventId,
-      attending: s.attendingSecondary,
-      meal: s.attendingSecondary ? s.meal : null,
-    })
-  }
+  // Save event responses for all eligible events
+  const eligibleEvents = (config.events ?? []).filter(e => guestTags.includes(e.tag))
+  await saveEventResponses(supabase, s.guestId, s.eventResponses ?? {}, eligibleEvents)
 
   await supabase
     .from('guests')
@@ -196,13 +229,12 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Authorize: every submitted guestId must be the cookie's guest, or (for
-  // group bookings) share the cookie's group_id. This prevents cross-guest
-  // submission even with a valid guest_session cookie.
+  // Authorize: every submitted guestId must be the cookie's guest, or
+  // share the cookie's group_id for group bookings.
   const targetIds = submissions.map(s => s.guestId)
   const { data: targets, error: targetErr } = await supabase
     .from('guests')
-    .select('id, group_id')
+    .select('id, group_id, guest_tags(tags(name))')
     .in('id', targetIds)
 
   if (targetErr || !targets || targets.length !== targetIds.length) {
@@ -218,18 +250,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  let secondaryEventId: string | null = null
-  if (config.secondaryEvent.enabled) {
-    const { data: event } = await supabase
-      .from('events')
-      .select('id')
-      .eq('is_primary', false)
-      .maybeSingle()
-    secondaryEventId = event?.id ?? null
-  }
-
   for (const s of submissions) {
-    await writeSubmission(supabase, s, secondaryEventId)
+    const target = targets.find(t => t.id === s.guestId)
+    const guestTags = (target?.guest_tags ?? []).flatMap(
+      (gt: { tags: { name: string } | { name: string }[] }) =>
+        Array.isArray(gt.tags) ? gt.tags.map(t => t.name) : [gt.tags.name]
+    )
+    await writeSubmission(supabase, s, guestTags)
   }
 
   const response = NextResponse.json({ success: true })

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { config } from '@/lib/config'
 import CustomQuestions from '@/components/customQuestions'
+import ConditionalEvents from '@/components/ConditionalEvents'
 import ThemeImages from '@/components/themeImages'
 
 type Guest = {
@@ -19,8 +20,11 @@ type GuestResponse = {
   dietary: string
   songRequest: string
   note: string
-  attendingSecondary: boolean | null
-  meal: string
+}
+
+type EventResponse = {
+  attending: boolean | null
+  answers: Record<string, string>
 }
 
 const defaultResponse = (): GuestResponse => ({
@@ -28,8 +32,6 @@ const defaultResponse = (): GuestResponse => ({
   dietary: '',
   songRequest: '',
   note: '',
-  attendingSecondary: null,
-  meal: '',
 })
 
 const inputStyle = {
@@ -58,6 +60,7 @@ export default function GroupRSVPPage() {
   const [guests, setGuests] = useState<Guest[]>([])
   const [responses, setResponses] = useState<Record<string, GuestResponse>>({})
   const [emails, setEmails] = useState<Record<string, string>>({})
+  const [eventResponses, setEventResponses] = useState<Record<string, Record<string, EventResponse>>>({})
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [customAnswers, setCustomAnswers] = useState<Record<string, Record<string, string>>>({})
@@ -101,9 +104,52 @@ export default function GroupRSVPPage() {
     setEmails(prev => ({ ...prev, [guestId]: value }))
   }
 
-  function isSecondaryEligible(guest: Guest) {
-    return config.secondaryEvent.enabled &&
-      guest.guest_tags?.some(t => t.tags.name === config.secondaryEvent.tag)
+  function handleEventChange(guestId: string, eventId: string, field: 'attending', value: boolean) {
+    setEventResponses(prev => ({
+      ...prev,
+      [guestId]: {
+        ...prev[guestId],
+        [eventId]: {
+          ...prev[guestId]?.[eventId],
+          attending: value,
+          answers: prev[guestId]?.[eventId]?.answers ?? {},
+        }
+      }
+    }))
+  }
+
+  function handleEventAnswerChange(guestId: string, eventId: string, fieldId: string, value: string) {
+    setEventResponses(prev => ({
+      ...prev,
+      [guestId]: {
+        ...prev[guestId],
+        [eventId]: {
+          ...prev[guestId]?.[eventId],
+          attending: prev[guestId]?.[eventId]?.attending ?? null,
+          answers: {
+            ...prev[guestId]?.[eventId]?.answers,
+            [fieldId]: value,
+          }
+        }
+      }
+    }))
+  }
+
+  function getGuestTags(guest: Guest): string[] {
+    return guest.guest_tags?.map(t => t.tags.name) ?? []
+  }
+
+  function getEligibleEvents(guest: Guest) {
+    const tags = getGuestTags(guest)
+    return (config.events ?? []).filter(e => tags.includes(e.tag))
+  }
+
+  function allEventsAnswered(guest: Guest): boolean {
+    const eligible = getEligibleEvents(guest)
+    return eligible.every(
+      e => eventResponses[guest.id]?.[e.id]?.attending !== null &&
+           eventResponses[guest.id]?.[e.id]?.attending !== undefined
+    )
   }
 
   async function handleSubmit() {
@@ -113,7 +159,6 @@ export default function GroupRSVPPage() {
       .filter(g => responses[g.id]?.attending !== null)
       .map(g => {
         const r = responses[g.id]
-        const eligible = isSecondaryEligible(g)
         return {
           guestId: g.id,
           attending: r.attending,
@@ -121,8 +166,7 @@ export default function GroupRSVPPage() {
           dietary: r.dietary || null,
           songRequest: r.songRequest || null,
           note: r.note || null,
-          attendingSecondary: eligible ? r.attendingSecondary : null,
-          meal: r.meal || null,
+          eventResponses: eventResponses[g.id] ?? {},
           customAnswers: customAnswers[g.id] ?? {},
         }
       })
@@ -160,6 +204,9 @@ export default function GroupRSVPPage() {
   const allAnswered = guests.every(g => responses[g.id]?.attending !== null)
   const allEmailsProvided = !config.form.emailRequired ||
     guests.every(g => emails[g.id]?.trim())
+  const allGuestEventsAnswered = guests.every(g =>
+    responses[g.id]?.attending !== true || allEventsAnswered(g)
+  )
 
   function handleCustomAnswer(guestId: string, questionId: string, answer: string) {
     setCustomAnswers(prev => ({
@@ -199,7 +246,7 @@ export default function GroupRSVPPage() {
         {guests.map(guest => {
           const r = responses[guest.id]
           if (!r) return null
-          const eligible = isSecondaryEligible(guest)
+          const guestTags = getGuestTags(guest)
 
           return (
             <div
@@ -307,51 +354,14 @@ export default function GroupRSVPPage() {
                     showWhen="attending"
                   />
 
-                  {/* Secondary event */}
-                  {eligible && (
-                    <div
-                      className="space-y-3 pt-6"
-                      style={{ borderTop: '1px solid var(--color-primary)' }}
-                    >
-                      <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-                        {config.secondaryEvent.question}
-                      </p>
-                      <div className="flex gap-4">
-                        <button
-                          onClick={() => updateResponse(guest.id, 'attendingSecondary', true)}
-                          className="flex-1 py-3 rounded-lg border font-medium"
-                          style={r.attendingSecondary === true ? buttonActiveStyle : buttonInactiveStyle}
-                        >
-                          Yes
-                        </button>
-                        <button
-                          onClick={() => updateResponse(guest.id, 'attendingSecondary', false)}
-                          className="flex-1 py-3 rounded-lg border font-medium"
-                          style={r.attendingSecondary === false ? buttonActiveStyle : buttonInactiveStyle}
-                        >
-                          No
-                        </button>
-                      </div>
-
-                      {r.attendingSecondary === true && (
-                        <div className="space-y-4 pt-2">
-                          <div className="space-y-2">
-                            <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-                              {config.secondaryForm.mealLabel}
-                            </p>
-                            <input
-                              type="text"
-                              placeholder={config.secondaryForm.mealPlaceholder}
-                              value={r.meal}
-                              onChange={e => updateResponse(guest.id, 'meal', e.target.value)}
-                              className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
-                              style={inputStyle}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Conditional events */}
+                  <ConditionalEvents
+                    events={config.events ?? []}
+                    guestTags={guestTags}
+                    responses={eventResponses[guest.id] ?? {}}
+                    onChange={(eventId, field, value) => handleEventChange(guest.id, eventId, field, value)}
+                    onAnswerChange={(eventId, fieldId, value) => handleEventAnswerChange(guest.id, eventId, fieldId, value)}
+                  />
                 </div>
               )}
 
@@ -389,7 +399,7 @@ export default function GroupRSVPPage() {
         {allAnswered && (
           <button
             onClick={handleSubmit}
-            disabled={submitting || !allEmailsProvided}
+            disabled={submitting || !allEmailsProvided || !allGuestEventsAnswered}
             className="w-full rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"
             style={buttonActiveStyle}
           >

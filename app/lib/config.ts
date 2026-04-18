@@ -12,6 +12,22 @@ export type CustomQuestion = {
   tagOnAnswer?: Record<string, string>
 }
 
+export type EventField = {
+  id: string
+  label: string
+  type: 'choice' | 'text' | 'boolean'
+  options?: string[]
+  required?: boolean
+}
+
+export type ConditionalEvent = {
+  id: string
+  name: string
+  tag: string
+  question: string
+  fields?: EventField[]
+}
+
 export type AppConfig = typeof configData & {
   access: {
     type: AccessType
@@ -22,6 +38,7 @@ export type AppConfig = typeof configData & {
     allowChanges: boolean
   }
   customQuestions: CustomQuestion[]
+  events: ConditionalEvent[]
 }
 
 export const config: AppConfig = configData as AppConfig
