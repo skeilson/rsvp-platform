@@ -372,7 +372,8 @@ export default function AdminDashboardPage() {
                               </p>
                               {er.attending && er.answers && Object.entries(er.answers).map(([fieldId, answer]) => {
                                 const event = config.events?.find((e: ConditionalEvent) => e.id === er.event_id)
-                                const field = event?.fields?.find((f: EventField) => f.id === fieldId)
+                                const fields = event?.fields ?? []
+                                const field = fields.find((f: EventField) => f.id === fieldId)
                                 return (
                                   <p key={fieldId} className="ml-3">
                                     <span className="font-medium text-gray-700">
