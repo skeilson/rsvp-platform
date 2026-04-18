@@ -564,6 +564,7 @@ Railway watches your Docker Hub image for updates. When GitHub Actions pushes a 
 | `RSVP_ACCESS_PASSWORD` | Password for password-based access | If password mode | No |
 | `RESEND_API_KEY` | Resend API key | Yes | No |
 | `RESEND_FROM_EMAIL` | Verified sending email address | Yes | No |
+| `SESSION_SECRET` | Random secret for signing session cookies | Yes | No |
 
 ### Alloy service variables
 
@@ -574,6 +575,19 @@ Railway watches your Docker Hub image for updates. When GitHub Actions pushes a 
 | `GRAFANA_PROMETHEUS_URL` | Grafana Cloud Prometheus base URL without trailing slash | Yes |
 | `GRAFANA_PROMETHEUS_USER` | Grafana Cloud Prometheus numeric user ID | Yes |
 | `GRAFANA_PROMETHEUS_TOKEN` | Grafana Cloud API token | Yes |
+
+### GitHub Actions secrets
+
+These are not needed locally but must be added as GitHub Actions 
+secrets for the CI/CD pipeline to work:
+
+| Variable | Description |
+|---|---|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `DOCKERHUB_TOKEN` | Docker Hub access token with read and write permissions |
+| `RAILWAY_TOKEN` | Railway API token from Account Settings → Tokens |
+| `RAILWAY_SERVICE_ID` | Your Railway app service ID found in the service URL |
+| `RAILWAY_ENVIRONMENT_ID` | Your Railway environment ID |
 
 ---
 
