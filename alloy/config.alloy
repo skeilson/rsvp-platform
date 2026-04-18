@@ -6,6 +6,11 @@ prometheus.scrape "rsvp" {
   metrics_path = "/api/metrics"
   scrape_interval = "30s"
   scheme = env("SCRAPE_SCHEME")
+
+  authorization {
+    type        = "Bearer"
+    credentials = env("METRICS_SCRAPE_TOKEN")
+  }
 }
 
 prometheus.remote_write "grafana" {
