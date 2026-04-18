@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { config } from '@/lib/config'
+import { config, ConditionalEvent, EventField } from '@/lib/config'
 
 type EventResponse = {
   id: string
@@ -359,7 +359,7 @@ export default function AdminDashboardPage() {
                     {guest.event_responses?.length > 0 && (
                       <div className="space-y-1 pt-1">
                         {guest.event_responses.map(er => {
-                          const event = config.events?.find(e => e.id === er.event_id)
+                          const event = config.events?.find((e: ConditionalEvent) => e.id === er.event_id)
                           return (
                             <div key={er.event_id}>
                               <p>
@@ -371,7 +371,8 @@ export default function AdminDashboardPage() {
                                 </span>
                               </p>
                               {er.attending && er.answers && Object.entries(er.answers).map(([fieldId, answer]) => {
-                                const field = event?.fields?.find(f => f.id === fieldId)
+                                const event = config.events?.find((e: ConditionalEvent) => e.id === er.event_id)
+                                const field = event?.fields?.find((f: EventField) => f.id === fieldId)
                                 return (
                                   <p key={fieldId} className="ml-3">
                                     <span className="font-medium text-gray-700">
