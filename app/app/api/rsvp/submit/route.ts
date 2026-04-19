@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { readGuestClaimsFromRequest } from '@/lib/guest-session'
-import { config, CustomQuestion, ConditionalEvent } from '@/lib/config'
+import { config, CustomQuestion, ConditionalEvent, EventField } from '@/lib/config'
 
 type EventResponse = {
   attending: boolean
@@ -188,6 +188,69 @@ async function removeEventTag(
     .eq('tag_id', tag.id)
 }
 
+async function applyTagsFromEventFields(
+  supabase: SupabaseClient,
+  guestId: string,
+  eventResponses: Record<string, EventResponse>,
+  eligibleEvents: ConditionalEvent[]
+) {
+  for (const event of eligibleEvents) {
+    const response = eventResponses[event.id]
+    if (!response || !response.attending || !event.fields) continue
+
+    for (const field of event.fields as EventField[]) {
+      if (!field.tagOnAnswer) continue
+
+      const answer = response.answers?.[field.id]
+      if (!answer) continue
+
+      const tagName = field.tagOnAnswer[answer]
+      if (!tagName) continue
+
+      // Ensure tag exists
+      const { data: existingTag } = await supabase
+        .from('tags')
+        .select('id')
+        .eq('name', tagName)
+        .maybeSingle()
+
+      let tagId = existingTag?.id
+      if (!tagId) {
+        const { data: newTag } = await supabase
+          .from('tags')
+          .insert({ name: tagName })
+          .select('id')
+          .single()
+        tagId = newTag?.id
+      }
+      if (!tagId) continue
+
+      // Remove any existing tags from this field's tagOnAnswer values
+      const allTagNames = Object.values(field.tagOnAnswer)
+      const { data: tagsToRemove } = await supabase
+        .from('tags')
+        .select('id')
+        .in('name', allTagNames)
+
+      if (tagsToRemove && tagsToRemove.length > 0) {
+        await supabase
+          .from('guest_tags')
+          .delete()
+          .eq('guest_id', guestId)
+          .in('tag_id', tagsToRemove.map(t => t.id))
+      }
+
+      // Apply the new tag
+      await supabase
+        .from('guest_tags')
+        .upsert(
+          { guest_id: guestId, tag_id: tagId },
+          { onConflict: 'guest_id,tag_id' }
+        )
+    }
+  }
+}
+
 async function writeSubmission(
   supabase: SupabaseClient,
   s: GuestSubmission,
@@ -208,6 +271,7 @@ async function writeSubmission(
   // Save event responses for all eligible events
   const eligibleEvents = ((config.events ?? []) as ConditionalEvent[]).filter(e => guestTags.includes(e.tag))
   await saveEventResponses(supabase, s.guestId, s.eventResponses ?? {}, eligibleEvents)
+  await applyTagsFromEventFields(supabase, s.guestId, s.eventResponses ?? {}, eligibleEvents)
 
   // Remove event tags for declined events
   for (const event of eligibleEvents) {

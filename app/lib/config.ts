@@ -18,6 +18,7 @@ export type EventField = {
   type: 'choice' | 'text' | 'boolean'
   options?: string[]
   required?: boolean
+  tagOnAnswer?: Record<string, string>
 }
 
 export type ConditionalEvent = {
