@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
       filteredGuests.map(guest =>
         resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL!,
+          replyTo: process.env.RESEND_REPLY_TO_EMAIL!,
           to: guest.email!,
           subject: safeSubject,
           html: `
