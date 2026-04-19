@@ -206,7 +206,7 @@ async function writeSubmission(
   })
 
   // Save event responses for all eligible events
-  const eligibleEvents = (config.events ?? []).filter(e => guestTags.includes(e.tag))
+  const eligibleEvents = ((config.events ?? []) as ConditionalEvent[]).filter(e => guestTags.includes(e.tag))
   await saveEventResponses(supabase, s.guestId, s.eventResponses ?? {}, eligibleEvents)
 
   // Remove event tags for declined events
