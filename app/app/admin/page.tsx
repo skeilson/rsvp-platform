@@ -37,7 +37,7 @@ type GuestWithResponse = {
 export default function AdminDashboardPage() {
   const [guests, setGuests] = useState<GuestWithResponse[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'responded' | 'pending'>('all')
+  const [filter, setFilter] = useState<'all' | 'responded' | 'pending' | 'attending' | 'declined'>('all')
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([])
   const [emailSubject, setEmailSubject] = useState('')
   const [emailMessage, setEmailMessage] = useState('')
@@ -131,12 +131,20 @@ export default function AdminDashboardPage() {
     setSending(false)
   }
 
-  const filtered = guests.filter(g => {
-    const matchesStatus =
-      filter === 'responded' ? g.has_responded :
-      filter === 'pending' ? !g.has_responded :
-      true
+    const filtered = guests.filter(g => {
+      const latestResponse = Array.isArray(g.responses)
+        ? g.responses.sort((a, b) =>
+            new Date(b.submitted_at ?? 0).getTime() - new Date(a.submitted_at ?? 0).getTime()
+          )[0]
+        : g.responses
 
+      const matchesStatus =
+        filter === 'responded' ? g.has_responded :
+        filter === 'pending' ? !g.has_responded :
+        filter === 'attending' ? latestResponse?.attending === true :
+        filter === 'declined' ? latestResponse?.attending === false :
+        true
+    
     const guestTagNames = g.guest_tags?.map(gt => gt.tags.name) ?? []
     const matchesTags = selectedFilterTags.length === 0 ||
       selectedFilterTags.every(tag => guestTagNames.includes(tag))
@@ -234,7 +242,7 @@ export default function AdminDashboardPage() {
 
         {/* Status filter */}
         <div className="flex gap-2">
-          {(['all', 'responded', 'pending'] as const).map(f => (
+          {(['all', 'responded', 'pending', 'attending', 'declined'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
