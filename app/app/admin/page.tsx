@@ -147,8 +147,22 @@ export default function AdminDashboardPage() {
   const stats = {
     total: guests.length,
     responded: guests.filter(g => g.has_responded).length,
-    attending: guests.filter(g => g.responses?.[0]?.attending === true).length,
-    declined: guests.filter(g => g.responses?.[0]?.attending === false).length,
+    attending: guests.filter(g => {
+      const response = Array.isArray(g.responses)
+        ? g.responses.sort((a, b) =>
+            new Date(b.submitted_at ?? 0).getTime() - new Date(a.submitted_at ?? 0).getTime()
+          )[0]
+        : g.responses
+      return response?.attending === true
+    }).length,
+    declined: guests.filter(g => {
+      const response = Array.isArray(g.responses)
+        ? g.responses.sort((a, b) =>
+            new Date(b.submitted_at ?? 0).getTime() - new Date(a.submitted_at ?? 0).getTime()
+          )[0]
+        : g.responses
+      return response?.attending === false
+    }).length,
     pending: guests.filter(g => !g.has_responded).length,
   }
 
