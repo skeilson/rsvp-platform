@@ -344,6 +344,23 @@ export default function GroupRSVPPage() {
                     onChange={(eventId, field, value) => handleEventChange(guest.id, eventId, field, value)}
                     onAnswerChange={(eventId, fieldId, value) => handleEventAnswerChange(guest.id, eventId, fieldId, value)}
                   />
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+                      {config.form.emailLabel}
+                      {config.form.emailRequired && (
+                        <span style={{ color: 'var(--color-accent)' }}> *</span>
+                      )}
+                    </p>
+                   <input
+                     type="email"
+                     placeholder={config.form.emailPlaceholder}
+                     value={email}
+                     onChange={e => setEmail(e.target.value)}
+                     className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+                     style={inputStyle}
+                   />
+                 </div>
                 </div>
               )}
 
@@ -376,26 +393,6 @@ export default function GroupRSVPPage() {
             showWhen="always"
           />
         ))}
-
-       {/* Email */}
-       {attending === true && (
-         <div className="space-y-2">
-           <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-             {config.form.emailLabel}
-             {config.form.emailRequired && (
-               <span style={{ color: 'var(--color-accent)' }}> *</span>
-             )}
-           </p>
-           <input
-             type="email"
-             placeholder={config.form.emailPlaceholder}
-             value={email}
-             onChange={e => setEmail(e.target.value)}
-             className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
-             style={inputStyle}
-           />
-         </div>
-       )}
 
         {/* Submit */}
         {allAnswered && (
