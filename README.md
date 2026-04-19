@@ -37,7 +37,7 @@ A fully configurable, self-hostable RSVP platform for any event — weddings, co
 - Name-based lookup against a pre-loaded invite list
 - Group RSVP support — couples and families respond together in a single flow
 - Conditional form logic — attending yes/no drives what questions appear
-- Tag-gated secondary event questions — only eligible guests see secondary event options
+- Tag-gated conditional events — unlimited additional events (rehearsal dinner, welcome drinks, after-party, hike, etc.) each with their own eligibility tag and optional sub-questions
 - Configurable custom questions — choice, text, or boolean, shown based on attendance status
 - Auto-tagging from custom question answers — e.g. shuttle pickup selection automatically tags the guest
 - Configurable access control — public, password-protected, or token-based entry
@@ -181,9 +181,17 @@ All event details, form labels, questions, and behavior are driven by `app/confi
 | `primaryEvent.name` | Name of the main event |
 | `primaryEvent.acceptLabel` | Accept button text |
 | `primaryEvent.declineLabel` | Decline button text |
-| `secondaryEvent.enabled` | Show or hide secondary event questions |
-| `secondaryEvent.tag` | Tag name that gates secondary event eligibility |
-| `secondaryEvent.question` | Question shown to eligible guests |
+| `events` | Array of conditional event definitions — each with id, name, tag, question, and optional fields |
+| `events[].id` | Unique identifier for the event — stored in event_responses |
+| `events[].name` | Display name shown in the admin dashboard |
+| `events[].tag` | Tag name that gates eligibility — only tagged guests see this event |
+| `events[].question` | Question shown to eligible guests |
+| `events[].fields` | Optional array of follow-up questions shown when guest answers yes |
+| `events[].fields[].id` | Unique field identifier |
+| `events[].fields[].label` | Question label shown to guest |
+| `events[].fields[].type` | choice, text, or boolean |
+| `events[].fields[].options` | Array of options for choice type fields |
+| `events[].fields[].required` | Whether the field is required |
 | `form.lookupTitle` | Title on the name lookup page |
 | `form.lookupSubtitle` | Subtitle on the name lookup page |
 | `form.lookupButton` | Lookup button label |
@@ -208,6 +216,17 @@ All event details, form labels, questions, and behavior are driven by `app/confi
 ## Custom questions
 
 Custom questions allow you to collect additional information from guests beyond the built-in fields. They are fully configurable in `app/config.json` and support three types: choice, text, and boolean.
+
+## Conditional events
+
+Conditional events allow you to collect RSVPs for any number of additional events beyond the primary one. Each event is shown only to guests tagged with the matching tag. Events support optional follow-up fields shown when a guest answers yes.
+
+To add a new event:
+1. Add the event definition to the events array in `config.json`
+2. Create the tag in Supabase
+3. Assign the tag to eligible guests
+
+No code changes or redeployment required.
 
 ### Question fields
 
@@ -337,9 +356,8 @@ The full guest flow works as follows:
 5. If the guest is solo, they see an individual form
 6. Attending NO path: guest leaves an optional note and submits — done
 7. Attending YES path: guest answers primary questions (dietary, song, note) and any custom questions with `showWhen: attending`
-8. If eligible for the secondary event the secondary event question appears
-9. Secondary event NO: guest submits — done
-10. Secondary event YES: guest answers meal preference and any secondary custom questions then submits — done
+8. Any conditional events the guest is eligible for appear — each requiring a yes or no answer
+9. Conditional event answers and any field responses are saved to event_responses — done
 11. On submit responses are written to the database using `upsert` so resubmissions overwrite existing data
 12. Custom question answers trigger auto-tagging if `tagOnAnswer` is configured
 
@@ -360,6 +378,7 @@ The admin dashboard is accessible at `/admin` and is protected by a password set
 - Delete or reset individual RSVPs which clears responses, event responses, custom answers, and resets has_responded
 - Email blast composer with tag-based filtering
 - Theme editor link in the header
+- Per-guest event responses displayed in the guest card with attending status and any field answers
 
 ### Tag management
 
@@ -599,7 +618,8 @@ Run these SQL files in order in the Supabase SQL Editor when setting up a new pr
 2. `supabase/migrations/002_rls_policies.sql` — enables Row Level Security and adds all policies
 3. `supabase/migrations/003_unique_constraints.sql` — adds unique constraints for upsert support
 4. `supabase/migrations/004_theme_table.sql` — creates the theme table and default row
-5. `supabase/migrations/005_custom_answers.sql` — creates the custom_answers table
+5. `supabase/migrations/005_custom_answers.sql` — creates the `custom_answers` table
+6. `supabase/migrations/008_flexible_events.sql` — replaces fixed `event_responses` table with flexible text-based `event_id`
 
 Then run `supabase/seed/001_seed_data.sql` to populate example data. Replace the seed data with your own guest list before going live.
 
