@@ -144,6 +144,13 @@ export default function AdminDashboardPage() {
     return matchesStatus && matchesTags
   })
 
+  const tagCounts = availableTags.reduce((acc, tag) => {
+    acc[tag] = guests.filter(g =>
+      g.guest_tags?.some(gt => gt.tags.name === tag)
+    ).length
+    return acc
+  }, {} as Record<string, number>)
+
   const stats = {
     total: guests.length,
     responded: guests.filter(g => g.has_responded).length,
@@ -209,6 +216,21 @@ export default function AdminDashboardPage() {
             </div>
           ))}
         </div>
+
+        {/* Tag counts */}
+        {availableTags.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-500">Guests by tag</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {availableTags.map(tag => (
+                <div key={tag} className="border rounded-lg p-4 space-y-1">
+                  <p className="text-sm text-gray-500">{tag}</p>
+                  <p className="text-3xl font-medium">{tagCounts[tag] ?? 0}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Status filter */}
         <div className="flex gap-2">
