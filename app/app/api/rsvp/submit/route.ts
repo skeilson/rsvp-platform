@@ -168,6 +168,26 @@ async function saveEventResponses(
   }
 }
 
+async function removeEventTag(
+  supabase: SupabaseClient,
+  guestId: string,
+  tagName: string
+) {
+  const { data: tag } = await supabase
+    .from('tags')
+    .select('id')
+    .eq('name', tagName)
+    .maybeSingle()
+
+  if (!tag) return
+
+  await supabase
+    .from('guest_tags')
+    .delete()
+    .eq('guest_id', guestId)
+    .eq('tag_id', tag.id)
+}
+
 async function writeSubmission(
   supabase: SupabaseClient,
   s: GuestSubmission,
@@ -188,6 +208,18 @@ async function writeSubmission(
   // Save event responses for all eligible events
   const eligibleEvents = (config.events ?? []).filter(e => guestTags.includes(e.tag))
   await saveEventResponses(supabase, s.guestId, s.eventResponses ?? {}, eligibleEvents)
+
+  // Remove event tags for declined events
+  for (const event of eligibleEvents) {
+    const eventResponse = s.eventResponses?.[event.id]
+    const declined =
+      !s.attending || // declined primary event
+      (eventResponse && eventResponse.attending === false) // declined this event
+
+    if (declined) {
+      await removeEventTag(supabase, s.guestId, event.tag)
+    }
+  }
 
   await supabase
     .from('guests')
