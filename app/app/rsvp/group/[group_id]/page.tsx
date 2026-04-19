@@ -355,8 +355,8 @@ export default function GroupRSVPPage() {
                    <input
                      type="email"
                      placeholder={config.form.emailPlaceholder}
-                     value={email}
-                     onChange={e => setEmail(e.target.value)}
+                     value={emails[guest.id] ?? ''}
+                     onChange={e => updateEmail(guest.id, e.target.value)}
                      className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
                      style={inputStyle}
                    />
