@@ -200,6 +200,7 @@ export default function AdminDashboardPage() {
             { label: 'Total guests', value: stats.total },
             { label: 'Responded', value: stats.responded },
             { label: 'Attending', value: stats.attending },
+            { label: 'Declined', value: stats.declined },
             { label: 'Pending', value: stats.pending },
           ].map(stat => (
             <div key={stat.label} className="border rounded-lg p-4 space-y-1">
