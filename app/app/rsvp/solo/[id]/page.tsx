@@ -169,24 +169,6 @@ export default function RSVPFormPage() {
           Hi, {guest?.first_name}
         </h1>
 
-        {/* Email */}
-        <div className="space-y-2">
-          <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-            {config.form.emailLabel}
-            {config.form.emailRequired && (
-              <span style={{ color: 'var(--color-accent)' }}> *</span>
-            )}
-          </p>
-          <input
-            type="email"
-            placeholder={config.form.emailPlaceholder}
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
-            style={inputStyle}
-          />
-        </div>
-
         {/* Primary attendance */}
         <div className="space-y-3">
           <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
@@ -297,12 +279,33 @@ export default function RSVPFormPage() {
           showWhen="always"
         />
 
+       {/* Email */}
+       {attending === true && (
+         <div className="space-y-2">
+           <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+             {config.form.emailLabel}
+             {config.form.emailRequired && (
+               <span style={{ color: 'var(--color-accent)' }}> *</span>
+             )}
+           </p>
+           <input
+             type="email"
+             placeholder={config.form.emailPlaceholder}
+             value={email}
+             onChange={e => setEmail(e.target.value)}
+             className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+             style={inputStyle}
+           />
+         </div>
+       )}
+
+        {/* Submit */}
         {attending !== null && (
           <button
             onClick={handleSubmit}
             disabled={
               submitting ||
-              (config.form.emailRequired && !email) ||
+              (attending === true && config.form.emailRequired && !email) ||
               (attending === true && eligibleEvents.length > 0 && !allEventsAnswered)
             }
             className="w-full rounded-lg px-4 py-3 text-base font-medium disabled:opacity-50"

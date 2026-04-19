@@ -203,7 +203,7 @@ export default function GroupRSVPPage() {
 
   const allAnswered = guests.every(g => responses[g.id]?.attending !== null)
   const allEmailsProvided = !config.form.emailRequired ||
-    guests.every(g => emails[g.id]?.trim())
+    guests.every(g => responses[g.id]?.attending !== true || emails[g.id]?.trim())
   const allGuestEventsAnswered = guests.every(g =>
     responses[g.id]?.attending !== true || allEventsAnswered(g)
   )
@@ -260,24 +260,6 @@ export default function GroupRSVPPage() {
               >
                 {guest.first_name} {guest.last_name}
               </h2>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
-                  {config.form.emailLabel}
-                  {config.form.emailRequired && (
-                    <span style={{ color: 'var(--color-accent)' }}> *</span>
-                  )}
-                </p>
-                <input
-                  type="email"
-                  placeholder={config.form.emailPlaceholder}
-                  value={emails[guest.id] ?? ''}
-                  onChange={e => updateEmail(guest.id, e.target.value)}
-                  className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
-                  style={inputStyle}
-                />
-              </div>
 
               {/* Primary attendance */}
               <div className="space-y-3">
@@ -394,6 +376,26 @@ export default function GroupRSVPPage() {
             showWhen="always"
           />
         ))}
+
+       {/* Email */}
+       {attending === true && (
+         <div className="space-y-2">
+           <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
+             {config.form.emailLabel}
+             {config.form.emailRequired && (
+               <span style={{ color: 'var(--color-accent)' }}> *</span>
+             )}
+           </p>
+           <input
+             type="email"
+             placeholder={config.form.emailPlaceholder}
+             value={email}
+             onChange={e => setEmail(e.target.value)}
+             className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
+             style={inputStyle}
+           />
+         </div>
+       )}
 
         {/* Submit */}
         {allAnswered && (
