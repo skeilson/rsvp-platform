@@ -107,7 +107,7 @@ export default function ConditionalEvents({
                           </button>
                         ))}
                       </div>
-                    ))}
+                    )}
 
                     {field.type === 'text' && (
                       <input
