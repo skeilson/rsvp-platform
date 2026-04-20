@@ -78,7 +78,10 @@ export default function ConditionalEvents({
 
             {response.attending === true && event.fields && event.fields.length > 0 && (
               <div className="space-y-4 pt-2">
-                {event.fields.map(field => (
+                {event.fields.filter(field => {
+                    if (!field.showWhenField) return true
+                    return response.answers[field.showWhenField] === field.showWhenValue
+                }).map(field => { 
                   <div key={field.id} className="space-y-2">
                     <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
                       {field.label}

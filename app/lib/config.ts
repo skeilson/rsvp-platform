@@ -19,6 +19,9 @@ export type EventField = {
   options?: string[]
   required?: boolean
   tagOnAnswer?: Record<string, string>
+  showWhenField?: string
+  showWhenValue?: string
+
 }
 
 export type ConditionalEvent = {
