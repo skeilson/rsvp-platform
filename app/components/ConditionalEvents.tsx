@@ -81,7 +81,7 @@ export default function ConditionalEvents({
                 {event.fields.filter(field => {
                     if (!field.showWhenField) return true
                     return response.answers[field.showWhenField] === field.showWhenValue
-                }).map(field => { 
+                }).map(field => ( 
                   <div key={field.id} className="space-y-2">
                     <p className="font-medium" style={{ color: 'var(--color-primary)' }}>
                       {field.label}
@@ -107,7 +107,7 @@ export default function ConditionalEvents({
                           </button>
                         ))}
                       </div>
-                    )}
+                    ))}
 
                     {field.type === 'text' && (
                       <input
