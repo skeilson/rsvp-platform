@@ -47,6 +47,7 @@ export default function AdminDashboardPage() {
   const [tagIdsByName, setTagIdsByName] = useState<Record<string, string>>({})
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ sent: number, failed: number, total: number } | null>(null)
+  const [showFormattingGuide, setShowFormattingGuide] =  useState(false)
 
   async function fetchGuests() {
     try {
@@ -520,15 +521,46 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">Message</p>
-            <textarea
-              placeholder="Write your message here..."
-              value={emailMessage}
-              onChange={e => setEmailMessage(e.target.value)}
-              rows={6}
-              className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
-            />
-          </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-700">Message</p>
+                <button 
+                  onClick={() => setShowFormattingGuide(prev => !prev)}
+                  className="text-xs text-gray-400 underline underline-offset-2"
+                >
+                  {showFormattingGuide ? 'Hide formatting guide' : 'Formatting guide'}
+                </button>
+               </div>
+
+               {showFormattingGuide && (
+                 <div className="border rounded-lg p-4 bg-gray-50 text-xs text-gray-600 space-y-2">
+                   <p className="font-medium text-gray-700">Markdown reference</p>
+                   <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                     <p><code className="bg-gray-200 px-1 rounded">**bold**</code></p>
+                     <p className="font-bold">bold</p>
+                     <p><code className="bg-gray-200 px-1 rounded">*italic*</code></p>
+                     <p className="italic">italic</p>
+                     <p><code className="bg-gray-200 px-1 rounded"># Heading</code></p>
+                     <p className="font-bold text-base">Heading</p>
+                     <p><code className="bg-gray-200 px-1 rounded">## Subheading</code></p>
+                     <p className="font-semibold">Subheading</p>
+                     <p><code className="bg-gray-200 px-1 rounded">- item</code></p>
+                     <p>• bullet point</p>
+                     <p><code className="bg-gray-200 px-1 rounded">[text](url)</code></p>
+                     <p className="text-blue-500 underline">link</p>
+                     <p><code className="bg-gray-200 px-1 rounded">blank line</code></p>
+                     <p>new paragraph</p>
+                   </div>
+                 </div>
+               )}
+
+               <textarea
+                 placeholder="Write your message here..."
+                 value={emailMessage}
+                 onChange={e => setEmailMessage(e.target.value)}
+                 rows={6}
+                 className="w-full border rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-gray-300"
+               />
+             </div>
 
           {sendResult && (
             <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-4">

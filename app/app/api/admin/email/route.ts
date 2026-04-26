@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/session'
+import { marked } from 'marked'
 
 function escapeHtml(str: string): string {
   return str
@@ -90,8 +91,8 @@ export async function POST(request: NextRequest) {
           to: guest.email!,
           subject: safeSubject,
           html: `
-            <p>Hi ${escapeHtml(guest.first_name)},</p>
-            <p>${escapeHtml(message)}</p>
+            <p>Hi ${escapeHtml(guest.first_name ?? ')},</p>
+            ${await marked.parse(message)}
           `,
         })
       )
