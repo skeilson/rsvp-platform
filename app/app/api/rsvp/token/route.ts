@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
   }
 
   const token = request.nextUrl.searchParams.get('token')
-  const redirectTo = safeRedirectPath(request.nextUrl.searchParams.get('redirect'))
   const expected = process.env.RSVP_ACCESS_TOKEN ?? ''
 
   if (typeof token !== 'string' || !expected || !safeEqual(token, expected)) {
@@ -34,9 +33,7 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const response = NextResponse.redirect(
-    new URL(redirectTo, process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000')
-  )
+  const response = NextResponse.json({ success: true })
   response.cookies.set('rsvp_session', createSessionToken('rsvp'), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
