@@ -19,7 +19,6 @@ export default function RSVPLookupPage() {
     const token = searchParams.get('token')
     if (!token) return
 
-    setValidatingToken(true)
     fetch(`/api/rsvp/token?token=${encodeURIComponent(token)}`)
       .then(res => {
         if (res.ok) {
