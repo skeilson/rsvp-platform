@@ -12,7 +12,8 @@ export default function RSVPLookupPage() {
   const [lastName, setLastName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [validatingToken, setValidatingToken] = useState(false)
+  const hasToken = searchParams.get('token') !== null
+  const [validatingToken, setValidatingToken] = useState(hasToken)
 
   useEffect(() => {
     const token = searchParams.get('token')
@@ -25,10 +26,14 @@ export default function RSVPLookupPage() {
           // Token valid — reload without token in URL so page renders normally
           router.replace('/rsvp')
         } else {
+          setValidatingToken(false)
           router.replace('/not-found')
         }
       })
-      .catch(() => router.replace('/not-found'))
+      .catch(() => {
+        setValidatingToken(false)
+        router.replace('/not-found')
+      })
   }, [router, searchParams])
 
   async function handleLookup() {
