@@ -82,7 +82,9 @@ export async function POST(request: NextRequest) {
           })
         )
       : guests
-    
+   
+    const parsedMessage = await marked.parse(message)
+ 
     const results = await Promise.allSettled(
       filteredGuests.map(guest =>
         resend.emails.send({
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
           subject: safeSubject,
           html: `
             <p>Hi ${escapeHtml(guest.first_name ?? '')},</p>
-            ${await marked.parse(message)}
+            ${parsedMessage}
           `,
         })
       )
