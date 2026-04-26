@@ -195,7 +195,13 @@ export default function AdminDashboardPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-medium">Admin dashboard</h1>
           <div className="flex items-center gap-4">
-            
+           
+              <a href="#email-blast"
+              className="text-sm text-gray-400 underline underline-offset-4"
+              >
+              Email blast form
+            </a>  
+ 
               <a href="/admin/theme"
               className="text-sm text-gray-400 underline underline-offset-4"
             >
@@ -477,7 +483,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Email blast */}
-        <div className="border rounded-lg p-6 space-y-4">
+        <div id="email-blast" className="border rounded-lg p-6 space-y-4">
           <h2 className="text-xl font-medium">Email blast</h2>
 
           <div className="space-y-2">
