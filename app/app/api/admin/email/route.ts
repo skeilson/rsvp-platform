@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           to: guest.email!,
           subject: safeSubject,
           html: `
-            <p>Hi ${escapeHtml(guest.first_name ?? ')},</p>
+            <p>Hi ${escapeHtml(guest.first_name ?? '')},</p>
             ${await marked.parse(message)}
           `,
         })
