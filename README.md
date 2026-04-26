@@ -38,24 +38,29 @@ A fully configurable, self-hostable RSVP platform for any event — weddings, co
 - Group RSVP support — couples and families respond together in a single flow
 - Conditional form logic — attending yes/no drives what questions appear
 - Tag-gated conditional events — unlimited additional events (rehearsal dinner, welcome drinks, after-party, hike, etc.) each with their own eligibility tag and optional sub-questions
+- Conditional event fields - follow-up questions that appear based on a previous field response (i.e. seat count for those who can drive for a carpool)
 - Configurable custom questions — choice, text, or boolean, shown based on attendance status
+- Email address collection - only visible to attendees and saved to database for email blasts
 - Auto-tagging from custom question answers — e.g. shuttle pickup selection automatically tags the guest
 - Configurable access control — public, password-protected, or token-based entry
 - Configurable redo policy — allow or deny changes after initial submission
 - Theme-driven UI — custom colors, fonts, logo, and hero image set from the admin dashboard
 - Mobile-friendly, clean UI driven entirely by config
 
+
 ### Admin experience
 
 - Password-protected admin dashboard
 - Real-time guest list with response status, dietary info, song requests, notes, and custom answers
-- Filter guests by response status — all, responded, pending
+- Filter guests by response status — all, responded, pending, attending, declined
 - Filter guests by tag
 - Add and remove tags per guest directly from the dashboard
 - Delete or reset individual RSVPs
 - Tag-based email blasts via Resend
+- Per-tag guest counts displayed in stats section
 - Visual theme editor — colors, fonts, logo, and hero image with live preview
 - Image uploads directly to Supabase Storage
+- Reply-to header on email blasts (so replies go to an actual email inbox)
 - Grafana dashboards for app health and guest response tracking
 
 ### Developer experience
@@ -192,6 +197,8 @@ All event details, form labels, questions, and behavior are driven by `app/confi
 | `events[].fields[].type` | choice, text, or boolean |
 | `events[].fields[].options` | Array of options for choice type fields |
 | `events[].fields[].required` | Whether the field is required |
+| `events[].fields[].showWhenField` | ID of another field whose value controls visibility of this field |
+| `events[].fields[].tagOnAnswer` | Map of answer values to tag names — auto-tags guest on submit |
 | `form.lookupTitle` | Title on the name lookup page |
 | `form.lookupSubtitle` | Subtitle on the name lookup page |
 | `form.lookupButton` | Lookup button label |
@@ -240,11 +247,13 @@ No code changes or redeployment required.
 | `options` | Array of options for choice type questions |
 | `tagOnAnswer` | Map of answer values to tag names — automatically tags the guest when they select that answer |
 
-### showWhen values
+### `showWhen` values
 
 - attending — shown only to guests who answer yes to the primary event
 - always — shown to all guests regardless of attendance
 - secondary — shown only to guests attending the secondary event
+
+Fields support `showWhenField` and `showWhenValue` to conditionally show a field based on the answer to a previous field. For example, a seat count question can be shown only to guests who selected "Yes, and I can drive" for a carpooling event.
 
 ### tagOnAnswer
 
@@ -428,7 +437,7 @@ Email blasts are sent via Resend from the admin dashboard.
 1. Create a Resend account at resend.com
 2. Add and verify your sending domain in Resend under Domains
 3. Generate an API key in Resend under API Keys
-4. Set `RESEND_API_KEY` and `RESEND_FROM_EMAIL` in your environment variables
+4. Set `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `RESEND_REPLY_TO_EMAIL` in your environment variables
 
 ### Sending a blast
 
@@ -525,7 +534,7 @@ Add these in your GitHub repo under Settings then Secrets and variables then Act
 - `RAILWAY_TOKEN` — a Railway API token from Account Settings → Tokens
 - `RAILWAY_SERVICE_ID` — your Railway app service ID found in the service URL
 
-### Important note on `NEXT_PUBLIC_ `variables
+### Important note on `NEXT_PUBLIC_` variables
 
 Variables prefixed with `NEXT_PUBLIC_` are baked into the browser JavaScript bundle at build time, not injected at runtime. This means they must be passed as Docker build args in `deploy.yml`, they must be set as GitHub secrets, and if you change their values you must trigger a new build for the change to take effect.
 
@@ -583,6 +592,7 @@ Railway watches your Docker Hub image for updates. When GitHub Actions pushes a 
 | `RSVP_ACCESS_PASSWORD` | Password for password-based access | If password mode | No |
 | `RESEND_API_KEY` | Resend API key | Yes | No |
 | `RESEND_FROM_EMAIL` | Verified sending email address | Yes | No |
+| `RESEND_REPLY_TO_EMAIL` | Email address guest responses will go to when responding to email blast | No | No|
 | `SESSION_SECRET` | Random secret for signing session cookies | Yes | No |
 
 ### Alloy service variables
@@ -620,6 +630,7 @@ Run these SQL files in order in the Supabase SQL Editor when setting up a new pr
 4. `supabase/migrations/004_theme_table.sql` — creates the theme table and default row
 5. `supabase/migrations/005_custom_answers.sql` — creates the `custom_answers` table
 6. `supabase/migrations/008_flexible_events.sql` — replaces fixed `event_responses` table with flexible text-based `event_id`
+7. `supabase/migrations/008_flexible_events.sql` — replaces fixed `event_responses with flexible JSONB-based structure supporting unlimited events
 
 Then run `supabase/seed/001_seed_data.sql` to populate example data. Replace the seed data with your own guest list before going live.
 
