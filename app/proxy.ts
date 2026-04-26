@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateSessionToken } from '@/lib/session'
+import { validateSessionToken, createSessionToken, safeEqual } from '@/lib/session'
 
 const accessType = process.env.RSVP_ACCESS_TYPE ?? 'none'
 
@@ -18,13 +18,24 @@ export function proxy(request: NextRequest) {
   if (pathname.startsWith('/rsvp')) {
     if (accessType === 'none') return NextResponse.next()
 
-    // Token mode — if token present in URL, validate it
+    // Token mode — if token present in URL, validate and set cookie directly
     if (accessType === 'token') {
       const token = searchParams.get('token')
       if (token) {
-        return NextResponse.redirect(
-          new URL(`/api/rsvp/token?token=${token}&redirect=${pathname}`, request.url)
-        )
+        const expected = process.env.RSVP_ACCESS_TOKEN ?? ''
+        if (expected && safeEqual(token, expected)) {
+          // Valid token — set cookie and redirect to /rsvp without token in URL
+          const response = NextResponse.redirect(new URL('/rsvp', request.url))
+          response.cookies.set('rsvp_session', createSessionToken('rsvp'), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 60 * 60 * 24 * 7,
+          })
+          return response
+        } else {
+          return NextResponse.redirect(new URL('/not-found', request.url))
+        }
       }
     }
 
