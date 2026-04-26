@@ -1,16 +1,35 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { config } from '@/lib/config'
 import ThemeImages from '@/components/themeImages'
 
 export default function RSVPLookupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [validatingToken, setValidatingToken] = useState(false)
+
+  useEffect(() => {
+    const token = searchParams.get('token')
+    if (!token) return
+
+    setValidatingToken(true)
+    fetch(`/api/rsvp/token?token=${encodeURIComponent(token)}`)
+      .then(res => {
+        if (res.ok) {
+          // Token valid — reload without token in URL so page renders normally
+          router.replace('/rsvp')
+        } else {
+          router.replace('/not-found')
+        }
+      })
+      .catch(() => router.replace('/not-found'))
+  }, [router, searchParams])
 
   async function handleLookup() {
     setLoading(true)
@@ -38,7 +57,6 @@ export default function RSVPLookupPage() {
     }
 
     const result = await res.json() as { redirectTo: string }
-
     await fetch('/api/metrics/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,13 +69,24 @@ export default function RSVPLookupPage() {
     router.push(result.redirectTo)
   }
 
+  if (validatingToken) return (
+    <main
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: 'var(--color-background)' }}
+    >
+      <p style={{ color: 'var(--color-primary)', opacity: 0.5 }}>
+        Loading your invitation...
+      </p>
+    </main>
+  )
+
   return (
     <main
       className="min-h-screen flex flex-col items-center p-8"
       style={{ backgroundColor: 'var(--color-background)' }}
     >
       <div className="w-full max-w-md space-y-6">
-	<ThemeImages />
+        <ThemeImages />
         <h1
           className="text-3xl font-medium text-center"
           style={{ color: 'var(--color-primary)' }}
@@ -70,7 +99,6 @@ export default function RSVPLookupPage() {
         >
           {config.form.lookupSubtitle}
         </p>
-
         <div className="space-y-4">
           <input
             type="text"
@@ -90,6 +118,7 @@ export default function RSVPLookupPage() {
             placeholder="Last name"
             value={lastName}
             onChange={e => setLastName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleLookup()}
             className="w-full rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2"
             style={{
               border: '1px solid var(--color-primary)',
@@ -98,11 +127,9 @@ export default function RSVPLookupPage() {
               opacity: 0.8,
             }}
           />
-
           {error && (
             <p className="text-red-500 text-sm">{error}</p>
           )}
-
           <button
             onClick={handleLookup}
             disabled={loading || !firstName || !lastName}

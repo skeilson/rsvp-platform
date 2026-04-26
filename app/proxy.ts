@@ -18,6 +18,9 @@ export function proxy(request: NextRequest) {
   if (pathname.startsWith('/rsvp')) {
     if (accessType === 'none') return NextResponse.next()
 
+    // Allow the base /rsvp page through so client-side token handling can work
+    if (pathname === '/rsvp') return NextResponse.next()
+
     // Token mode — if token present in URL, validate and set cookie directly
     if (accessType === 'token') {
       const token = searchParams.get('token')
