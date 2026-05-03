@@ -638,6 +638,40 @@ Also create a public Supabase Storage bucket called `rsvp-assets` for image uplo
 
 ---
 
+## Row Level Security (RLS) — CRITICAL REQUIREMENT
+
+### Why RLS is Essential
+
+Row Level Security (RLS) is **critical for this application's security**. It prevents the public Supabase anon key (which is embedded in browser JavaScript) from accessing or modifying guest data directly.
+
+**Without RLS enabled:**
+- Anyone with the anon key can read ALL guest names, emails, and RSVPs
+- Anyone with the anon key can modify guest responses and has_responded flags
+- Anyone with the anon key can insert or delete guest tags
+- The application becomes a **public security breach**
+
+**With RLS enabled:**
+- Anon key can only read the public theme (colors, fonts, images)
+- All guest data is protected at the database level
+- Server-side routes use the service role key to access guest data
+- Application is secure and production-ready
+
+### Verification Checklist
+
+After running all migrations, verify RLS is properly enabled:
+
+**In Supabase Dashboard:**
+
+1. Go to SQL Editor
+2. Run this query to check which tables have RLS enabled:
+   ```sql
+   SELECT schemaname, tablename, rowsecurity 
+   FROM pg_tables 
+   WHERE schemaname = 'public' 
+   ORDER BY tablename;
+
+---
+
 ## Open source notes
 
 This project is designed to be forked and customized for any event. A few things to keep in mind:
